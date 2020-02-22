@@ -74,12 +74,14 @@ type GofixEngine struct {
 	templater   *Templater
 	fileServer  http.Handler
 	userChecker *regexp.Regexp
+	scanner     *MailScanner
 }
 
 func NewGofixEngine() (e *GofixEngine) {
 	e = &GofixEngine{
 		templater:  NewTemplater("templates"),
 		fileServer: http.FileServer(http.Dir("./")),
+		scanner:    NewMailScanner("/home/vmail/semlanik.org"),
 	}
 
 	var err error = nil
@@ -88,6 +90,13 @@ func NewGofixEngine() (e *GofixEngine) {
 		log.Fatal("Could not compile user checker regex")
 	}
 	return
+}
+
+func (e *GofixEngine) Run() {
+	defer e.scanner.watcher.Close()
+	e.scanner.Run()
+	http.Handle("/", e)
+	log.Fatal(http.ListenAndServe(":65200", nil))
 }
 
 func (e *GofixEngine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -129,13 +138,13 @@ func (e *GofixEngine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			boundaryFinder, err := regexp.Compile(BoundaryRegExp)
 
-			if !fileExists("/home/vmail/vmail/" + r.URL.Query().Get("user")) {
+			if !fileExists("/home/vmail/semlanik.org/" + r.URL.Query().Get("user")) {
 				w.WriteHeader(http.StatusForbidden)
 				fmt.Fprint(w, "403 Unknown user")
 				return
 			}
 
-			file, _ := os.Open("/home/vmail/vmail/" + r.URL.Query().Get("user"))
+			file, _ := os.Open("/home/vmail/semlanik.org/" + r.URL.Query().Get("user"))
 			scanner := bufio.NewScanner(file)
 			activeBoundary := ""
 			var previousHeader *string = nil
@@ -255,11 +264,10 @@ func fileExists(filename string) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
-	return !info.IsDir()
+	return err == nil && !info.IsDir() && info != nil
 }
 
 func main() {
-	handler := NewGofixEngine()
-	http.Handle("/", handler)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	engine := NewGofixEngine()
+	engine.Run()
 }
