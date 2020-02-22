@@ -1,0 +1,42 @@
+.mailList {
+    width: 100%;
+    table-layout: fixed;
+    font-family: 'Titillium Web';
+    border-collapse: collapse;
+    border-spacing: 0;
+    box-shadow: 0pt 3pt 6pt 0pt rgba(0,0,0,0.5);
+}
+
+.mailList td {
+    padding: 10pt;
+}
+
+.mailList tr:last-child {
+    border-bottom: 0;
+}
+
+tr {
+    background-color: aliceblue;
+    border-bottom: 1px solid rgb(169, 198, 223);
+}
+
+td.fromCol {
+    width: 300pt;
+    font-weight: bold;
+
+}
+
+td.subjCol {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+td.dateCol {
+    width: 100pt;
+    overflow: hidden;
+    text-overflow:ellipsis;
+    white-space: nowrap;
+}
+

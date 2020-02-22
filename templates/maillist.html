@@ -1,0 +1,13 @@
+<table class="mailList">
+    <tbody>
+        {{range .}}
+        <tr>
+            <td class="fromCol">{{.From}}</td>
+            <td class="subjCol">{{.Subject}}</td>
+            <td class="dateCol">{{.Date}}</td>
+        </tr>
+        {{else}}
+        <tr><td><b>Mail folder is empty</b></td>></tr>
+        {{end}}
+    </tbody>
+</table>
