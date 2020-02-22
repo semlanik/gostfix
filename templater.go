@@ -42,6 +42,11 @@ type Templater struct {
 	mailListTemplate *template.Template
 }
 
+type Index struct {
+	Folders  template.HTML
+	MailList template.HTML
+}
+
 func NewTemplater(templatesPath string) (t *Templater) {
 	t = nil
 	index, err := parseTemplate(templatesPath + "/" + IndexTemplateName)

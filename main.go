@@ -244,9 +244,10 @@ func (e *GofixEngine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				state = StateHeaderScan
 			}
 
-			content := template.HTML(e.templater.ExecuteMailList(emails))
-
-			fmt.Fprint(w, e.templater.ExecuteIndex(content))
+			fmt.Fprint(w, e.templater.ExecuteIndex(&Index{
+				MailList: template.HTML(e.templater.ExecuteMailList(emails)),
+				Folders:  "Folders",
+			}))
 		}
 	}
 }

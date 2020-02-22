@@ -1,10 +1,21 @@
-.mailList {
-    width: 100%;
-    table-layout: fixed;
+* {
     font-family: 'Titillium Web';
+}
+
+body {
+    background-color: white;
+}
+
+table {
     border-collapse: collapse;
     border-spacing: 0;
-    box-shadow: 0pt 3pt 6pt 0pt rgba(0,0,0,0.5);
+}
+
+table.mailList {
+    width: 100%;
+    table-layout: fixed;
+    border-radius: 2pt;
+    overflow: hidden;
 }
 
 .mailList td {
@@ -15,9 +26,14 @@
     border-bottom: 0;
 }
 
-tr {
+.mailList tr {
     background-color: aliceblue;
     border-bottom: 1px solid rgb(169, 198, 223);
+    cursor: pointer;
+}
+
+.mailList tr:hover {
+    background-color: rgb(229, 239, 248);
 }
 
 td.fromCol {
@@ -40,3 +56,93 @@ td.dateCol {
     white-space: nowrap;
 }
 
+
+.btn {
+    position: relative;
+
+    display: block;
+    margin: 10pt auto;
+    padding:8pt;
+
+    overflow: hidden;
+
+    border-width: 0;
+    outline: none;
+    border-radius: 2pt;
+    box-shadow: 0 1pt 4pt rgba(0, 0, 0, .6);
+
+    background-color: #2ecc71;
+    color: #ecf0f1;
+
+    font-size: 12pt;
+    font-weight: bold;
+    transition: background-color .3s;
+}
+
+.btn:hover, .btn:focus {
+    background-color: #27ae60;
+}
+
+.btn > * {
+    position: relative;
+}
+
+.btn span {
+    display: block;
+    padding: 12px 24px;
+}
+
+.btn:before {
+    content: "";
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+
+    display: block;
+    width: 0;
+    padding-top: 0;
+
+    border-radius: 100%;
+
+    background-color: rgba(236, 240, 241, .3);
+
+    -webkit-transform: translate(-50%, -50%);
+    -moz-transform: translate(-50%, -50%);
+    -ms-transform: translate(-50%, -50%);
+    -o-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+}
+
+.btn:active:before {
+    width: 120%;
+    padding-top: 120%;
+
+    transition: width .2s ease-out, padding-top .2s ease-out;
+}
+
+.btn.orange {
+    background-color: #e67e22;
+}
+
+.btn.orange:hover, .btn.orange:focus {
+    background-color: #d35400;
+}
+
+.btn.red {
+    background-color: #e74c3c;
+}
+
+.btn.red:hover, .btn.red:focus {
+    background-color: #c0392b;
+}
+
+.materialLevel1 {
+    box-shadow: 0 1pt 3pt rgba(0, 0, 0, .6);
+
+}
+
+.materialLevel2 {
+    box-shadow: 0 1pt 4pt rgba(0, 0, 0, .6);
+
+}
