@@ -21,6 +21,7 @@ type MailScanner struct {
 // }
 
 func NewMailScanner(mailPath string) (ms *MailScanner) {
+	fmt.Printf("Add mail folder %s for watching\n", mailPath)
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
@@ -36,9 +37,10 @@ func NewMailScanner(mailPath string) (ms *MailScanner) {
 	}
 
 	for _, f := range files {
-		if fileExists(f.Name()) {
-			fmt.Printf("Add mail file %s for watching\n", f.Name())
-			watcher.Add(f.Name())
+		fullPath := mailPath + "/" + f.Name()
+		if fileExists(fullPath) {
+			fmt.Printf("Add mail file %s for watching\n", fullPath)
+			watcher.Add(fullPath)
 		}
 	}
 
