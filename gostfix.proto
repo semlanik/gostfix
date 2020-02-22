@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package main;
+
+message MailHeader {
+	string From = 1;
+	string To = 2;
+	string Cc = 3;
+	string Bcc = 4;
+	string Date = 5;
+	string Subject = 6;
+}

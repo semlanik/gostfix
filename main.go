@@ -53,20 +53,20 @@ const (
 	UserRegExp          = "^[a-zA-Z][\\w0-9\\._]*"
 )
 
-type Email struct {
-	From        string
-	To          string
-	Cc          string
-	Bcc         string
-	Date        string
-	Subject     string
-	ContentType string
-	Body        string
-}
+// type Email struct {
+// 	From        string
+// 	To          string
+// 	Cc          string
+// 	Bcc         string
+// 	Date        string
+// 	Subject     string
+// 	ContentType string
+// 	Body        string
+// }
 
-func NewEmail() *Email {
-	return &Email{
-		ContentType: "plain/text",
+func NewEmail() *MailHeader {
+	return &MailHeader{
+		// ContentType: "plain/text",
 	}
 }
 
@@ -148,18 +148,19 @@ func (e *GofixEngine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			scanner := bufio.NewScanner(file)
 			activeBoundary := ""
 			var previousHeader *string = nil
-			var emails []*Email
+			var emails []*MailHeader
+			lastContentType := "plain/text"
 			for email := NewEmail(); scanner.Scan(); {
 				if scanner.Text() == "" {
 					if state == StateHeaderScan {
-						boundaryCapture := boundaryFinder.FindStringSubmatch(email.ContentType)
+						boundaryCapture := boundaryFinder.FindStringSubmatch(lastContentType)
 						if len(boundaryCapture) == 2 {
 							activeBoundary = boundaryCapture[1]
 						} else {
 							activeBoundary = ""
 						}
 						state = StateBodyScan
-						// fmt.Printf("--------------------------Start body scan content type:%s boundary: %s -------------------------\n", email.ContentType, activeBoundary)
+						// fmt.Printf("--------------------------Start body scan content type:%s boundary: %s -------------------------\n", lastContentType, activeBoundary)
 					} else if state == StateBodyScan {
 						// fmt.Printf("--------------------------Previous email-------------------------\n%v\n", email)
 
@@ -192,7 +193,7 @@ func (e *GofixEngine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						case "date":
 							previousHeader = &email.Date
 						case "content-type":
-							previousHeader = &email.ContentType
+							previousHeader = &lastContentType
 						default:
 							previousHeader = nil
 						}
@@ -208,7 +209,7 @@ func (e *GofixEngine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						continue
 					}
 				} else {
-					email.Body += scanner.Text() + "\n"
+					// email.Body += scanner.Text() + "\n"
 					if activeBoundary != "" {
 						capture := boundaryEndFinder.FindStringSubmatch(scanner.Text())
 						if len(capture) == 2 {
