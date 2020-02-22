@@ -64,9 +64,12 @@ const (
 // 	Body        string
 // }
 
-func NewEmail() *MailHeader {
-	return &MailHeader{
-		// ContentType: "plain/text",
+func NewEmail() *Mail {
+	return &Mail{
+		Header: &MailHeader{},
+		Body: &MailBody{
+			ContentType: "plain/text",
+		},
 	}
 }
 
@@ -75,13 +78,15 @@ type GofixEngine struct {
 	fileServer  http.Handler
 	userChecker *regexp.Regexp
 	scanner     *MailScanner
+	mailPath    string
 }
 
-func NewGofixEngine() (e *GofixEngine) {
+func NewGofixEngine(mailPath string) (e *GofixEngine) {
 	e = &GofixEngine{
 		templater:  NewTemplater("templates"),
 		fileServer: http.FileServer(http.Dir("./")),
-		scanner:    NewMailScanner("/home/vmail/semlanik.org"),
+		scanner:    NewMailScanner(mailPath),
+		mailPath:   mailPath,
 	}
 
 	var err error = nil
@@ -138,29 +143,29 @@ func (e *GofixEngine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			boundaryFinder, err := regexp.Compile(BoundaryRegExp)
 
-			if !fileExists("/home/vmail/semlanik.org/" + r.URL.Query().Get("user")) {
+			if !fileExists(e.mailPath + "/" + r.URL.Query().Get("user")) {
 				w.WriteHeader(http.StatusForbidden)
 				fmt.Fprint(w, "403 Unknown user")
 				return
 			}
 
-			file, _ := os.Open("/home/vmail/semlanik.org/" + r.URL.Query().Get("user"))
+			file, _ := os.Open(e.mailPath + "/" + r.URL.Query().Get("user"))
 			scanner := bufio.NewScanner(file)
 			activeBoundary := ""
 			var previousHeader *string = nil
-			var emails []*MailHeader
-			lastContentType := "plain/text"
-			for email := NewEmail(); scanner.Scan(); {
+			var emails []*Mail
+			email := NewEmail()
+			for scanner.Scan() {
 				if scanner.Text() == "" {
 					if state == StateHeaderScan {
-						boundaryCapture := boundaryFinder.FindStringSubmatch(lastContentType)
+						boundaryCapture := boundaryFinder.FindStringSubmatch(email.Body.ContentType)
 						if len(boundaryCapture) == 2 {
 							activeBoundary = boundaryCapture[1]
 						} else {
 							activeBoundary = ""
 						}
 						state = StateBodyScan
-						// fmt.Printf("--------------------------Start body scan content type:%s boundary: %s -------------------------\n", lastContentType, activeBoundary)
+						// fmt.Printf("--------------------------Start body scan content type:%s boundary: %s -------------------------\n", email.Body.ContentType, activeBoundary)
 					} else if state == StateBodyScan {
 						// fmt.Printf("--------------------------Previous email-------------------------\n%v\n", email)
 
@@ -181,19 +186,19 @@ func (e *GofixEngine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						header := strings.ToLower(capture[1])
 						switch header {
 						case "from":
-							previousHeader = &email.From
+							previousHeader = &email.Header.From
 						case "to":
-							previousHeader = &email.To
+							previousHeader = &email.Header.To
 						case "cc":
-							previousHeader = &email.Cc
+							previousHeader = &email.Header.Cc
 						case "bcc":
-							previousHeader = &email.Bcc
+							previousHeader = &email.Header.Bcc
 						case "subject":
-							previousHeader = &email.Subject
+							previousHeader = &email.Header.Subject
 						case "date":
-							previousHeader = &email.Date
+							previousHeader = &email.Header.Date
 						case "content-type":
-							previousHeader = &lastContentType
+							previousHeader = &email.Body.ContentType
 						default:
 							previousHeader = nil
 						}
@@ -209,7 +214,7 @@ func (e *GofixEngine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						continue
 					}
 				} else {
-					// email.Body += scanner.Text() + "\n"
+					// email.Body.Content += scanner.Text() + "\n"
 					if activeBoundary != "" {
 						capture := boundaryEndFinder.FindStringSubmatch(scanner.Text())
 						if len(capture) == 2 {
@@ -228,6 +233,15 @@ func (e *GofixEngine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 				}
+			}
+
+			if state == StateBodyScan { //Finalize if body read till EOF
+				// fmt.Printf("--------------------------Previous email-------------------------\n%v\n", email)
+
+				previousHeader = nil
+				activeBoundary = ""
+				emails = append(emails, email)
+				state = StateHeaderScan
 			}
 
 			content := template.HTML(e.templater.ExecuteMailList(emails))
@@ -269,6 +283,10 @@ func fileExists(filename string) bool {
 }
 
 func main() {
-	engine := NewGofixEngine()
+	mailPath := "./"
+	if len(os.Args) >= 2 {
+		mailPath = os.Args[1]
+	}
+	engine := NewGofixEngine(mailPath)
 	engine.Run()
 }

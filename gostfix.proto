@@ -2,11 +2,21 @@ syntax = "proto3";
 
 package main;
 
+message MailBody {
+    string contentType = 1;
+    bytes content = 2;
+}
+
 message MailHeader {
-	string From = 1;
-	string To = 2;
-	string Cc = 3;
-	string Bcc = 4;
-	string Date = 5;
-	string Subject = 6;
+	string from = 1;
+	string to = 2;
+	string cc = 3;
+	string bcc = 4;
+	string date = 5;
+	string subject = 6;
+}
+
+message Mail {
+    MailHeader header = 1;
+    MailBody body = 2;
 }
