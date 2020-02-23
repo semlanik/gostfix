@@ -3,23 +3,23 @@
     <head>
         <meta charset="utf-8"/>
         <link href="https://fonts.googleapis.com/css?family=Titillium+Web&display=swap" rel="stylesheet">
+        <link type="text/css" href="css/index.css" rel="stylesheet">
         <link type="text/css" href="css/styles.css" rel="stylesheet">
     </head>
     <body>
-        <table style="width: 100%;">
-            <tr>
-                <td style="width: 150pt; vertical-align:top">
-                    <div style="display: inline-block; overflow-y: auto; padding: 10pt; ">
-                        <button class="btn orange materialLevel1">New email</button>
-                        {{.Folders}}
-                    </div>
-                </td>
-                <td>
-                    <div style="display: inline-block; overflow-y: auto; padding: 10pt;">
-                        {{.MailList}}
-                    </div>
-                </td>
-            </tr>
+        <div>
+            <div class="foldersBox">
+                <button class="btn materialLevel1" style="width: 130pt">New email</button>
+                {{.Folders}}
+            </div>
+            <div class="materialLevel1 contentBox">
+                {{.MailList}}
+            </div>
+            <div id="details" class="materialLevel2 contentBox emailDetails" style="display: none;">
+                    <button class="btn materialLevel1" onclick="document.getElementById('details').style.display='none';">Back</button><br/>
+                    test email
+                </div>
+            <p class="copyrights">gostfix {{.Version}} Web interface. Copyright (c) 2020 Alexey Edelev &lt;semlanik@gmail.com&gt;</p>
         </div>
     </body>
 </html>

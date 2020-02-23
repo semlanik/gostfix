@@ -1,8 +1,8 @@
-<table class="mailList materialLevel1">
+<table class="mailList">
     <tbody>
         {{range .}}
-        <tr onclick="window.location='#';">
-            <td class="fromCol">{{.Header.From}}</a></td>
+        <tr onclick="document.getElementById('details').style.display='block';">
+            <td class="fromCol">{{.Header.From}}</td>
             <td class="subjCol">{{.Header.Subject}}</td>
             <td class="dateCol">{{.Header.Date}}</td>
         </tr>

@@ -45,12 +45,24 @@ const (
 )
 
 const (
+	AtLeastOneHeaderMask = 1 << iota
+	FromHeaderMask
+	DateHeaderMask
+	ToHeaderMask
+	AllHeaderMask = 15
+)
+
+const (
 	HeaderRegExp        = "^([\x21-\x7E^:]+):(.*)"
 	FoldingRegExp       = "^\\s+(.*)"
 	BoundaryStartRegExp = "^--(.*)"
 	BoundaryEndRegExp   = "^--(.*)--$"
 	BoundaryRegExp      = "boundary=\"(.*)\""
 	UserRegExp          = "^[a-zA-Z][\\w0-9\\._]*"
+)
+
+const (
+	Version = "0.1.0 alpha"
 )
 
 // type Email struct {
@@ -106,149 +118,162 @@ func (e *GofixEngine) Run() {
 
 func (e *GofixEngine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.URL.Path)
-	switch r.URL.Path {
-	case "/css/styles.css":
+	if strings.Index(r.URL.Path, "/css/") == 0 {
 		e.fileServer.ServeHTTP(w, r)
-	default:
-		{
-			user := r.URL.Query().Get("user")
+	} else {
+		user := r.URL.Query().Get("user")
 
-			if e.userChecker.FindString(user) != user || user == "" {
-				fmt.Print("Invalid user")
-				w.WriteHeader(http.StatusUnauthorized)
-				fmt.Fprint(w, "401 - Access denied")
-				return
-			}
+		if e.userChecker.FindString(user) != user || user == "" {
+			fmt.Print("Invalid user")
+			w.WriteHeader(http.StatusUnauthorized)
+			fmt.Fprint(w, "401 - Access denied")
+			return
+		}
 
-			state := StateHeaderScan
-			headerFinder, err := regexp.Compile(HeaderRegExp)
-			if err != nil {
-				log.Fatalf("Invalid regexp %s\n", err)
-			}
+		state := StateHeaderScan
+		headerFinder, err := regexp.Compile(HeaderRegExp)
+		if err != nil {
+			log.Fatalf("Invalid regexp %s\n", err)
+		}
 
-			foldingFinder, err := regexp.Compile(FoldingRegExp)
-			if err != nil {
-				log.Fatalf("Invalid regexp %s\n", err)
-			}
+		foldingFinder, err := regexp.Compile(FoldingRegExp)
+		if err != nil {
+			log.Fatalf("Invalid regexp %s\n", err)
+		}
 
-			boundaryStartFinder, err := regexp.Compile(BoundaryStartRegExp)
-			if err != nil {
-				log.Fatalf("Invalid regexp %s\n", err)
-			}
+		// boundaryStartFinder, err := regexp.Compile(BoundaryStartRegExp)
+		// if err != nil {
+		// 	log.Fatalf("Invalid regexp %s\n", err)
+		// }
 
-			boundaryEndFinder, err := regexp.Compile(BoundaryEndRegExp)
-			if err != nil {
-				log.Fatalf("Invalid regexp %s\n", err)
-			}
+		boundaryEndFinder, err := regexp.Compile(BoundaryEndRegExp)
+		if err != nil {
+			log.Fatalf("Invalid regexp %s\n", err)
+		}
 
-			boundaryFinder, err := regexp.Compile(BoundaryRegExp)
+		boundaryFinder, err := regexp.Compile(BoundaryRegExp)
 
-			if !fileExists(e.mailPath + "/" + r.URL.Query().Get("user")) {
-				w.WriteHeader(http.StatusForbidden)
-				fmt.Fprint(w, "403 Unknown user")
-				return
-			}
+		if !fileExists(e.mailPath + "/" + r.URL.Query().Get("user")) {
+			w.WriteHeader(http.StatusForbidden)
+			fmt.Fprint(w, "403 Unknown user")
+			return
+		}
 
-			file, _ := os.Open(e.mailPath + "/" + r.URL.Query().Get("user"))
-			scanner := bufio.NewScanner(file)
-			activeBoundary := ""
-			var previousHeader *string = nil
-			var emails []*Mail
-			email := NewEmail()
-			for scanner.Scan() {
-				if scanner.Text() == "" {
-					if state == StateHeaderScan {
-						boundaryCapture := boundaryFinder.FindStringSubmatch(email.Body.ContentType)
-						if len(boundaryCapture) == 2 {
-							activeBoundary = boundaryCapture[1]
-						} else {
-							activeBoundary = ""
-						}
-						state = StateBodyScan
-						// fmt.Printf("--------------------------Start body scan content type:%s boundary: %s -------------------------\n", email.Body.ContentType, activeBoundary)
-					} else if state == StateBodyScan {
-						// fmt.Printf("--------------------------Previous email-------------------------\n%v\n", email)
-
+		file, _ := os.Open(e.mailPath + "/" + r.URL.Query().Get("user"))
+		scanner := bufio.NewScanner(file)
+		activeBoundary := ""
+		var previousHeader *string = nil
+		var emails []*Mail
+		mandatoryHeaders := 0
+		email := NewEmail()
+		for scanner.Scan() {
+			if scanner.Text() == "" {
+				if state == StateHeaderScan && mandatoryHeaders&AtLeastOneHeaderMask == AtLeastOneHeaderMask {
+					boundaryCapture := boundaryFinder.FindStringSubmatch(email.Body.ContentType)
+					if len(boundaryCapture) == 2 {
+						activeBoundary = boundaryCapture[1]
+					} else {
+						activeBoundary = ""
+					}
+					state = StateBodyScan
+					// fmt.Printf("--------------------------Start body scan content type:%s boundary: %s -------------------------\n", email.Body.ContentType, activeBoundary)
+				} else if state == StateBodyScan {
+					// fmt.Printf("--------------------------Previous email-------------------------\n%v\n", email)
+					if activeBoundary == "" {
 						previousHeader = nil
 						activeBoundary = ""
-						emails = append(emails, email)
+						fmt.Printf("Actual headers: %d\n", mandatoryHeaders)
+						if mandatoryHeaders == AllHeaderMask {
+							emails = append(emails, email)
+						}
 						email = NewEmail()
 						state = StateHeaderScan
+						mandatoryHeaders = 0
 					} else {
-						// fmt.Printf("Empty line in state %d\n", state)
-					}
-				}
-
-				if state == StateHeaderScan {
-					capture := headerFinder.FindStringSubmatch(scanner.Text())
-					if len(capture) == 3 {
-						// fmt.Printf("capture Header %s : %s\n", strings.ToLower(capture[0]), strings.ToLower(capture[1]))
-						header := strings.ToLower(capture[1])
-						switch header {
-						case "from":
-							previousHeader = &email.Header.From
-						case "to":
-							previousHeader = &email.Header.To
-						case "cc":
-							previousHeader = &email.Header.Cc
-						case "bcc":
-							previousHeader = &email.Header.Bcc
-						case "subject":
-							previousHeader = &email.Header.Subject
-						case "date":
-							previousHeader = &email.Header.Date
-						case "content-type":
-							previousHeader = &email.Body.ContentType
-						default:
-							previousHeader = nil
-						}
-						if previousHeader != nil {
-							*previousHeader += capture[2]
-						}
-						continue
-					}
-
-					capture = foldingFinder.FindStringSubmatch(scanner.Text())
-					if len(capture) == 2 && previousHeader != nil {
-						*previousHeader += capture[1]
+						fmt.Printf("Still in body scan\n")
 						continue
 					}
 				} else {
-					// email.Body.Content += scanner.Text() + "\n"
-					if activeBoundary != "" {
-						capture := boundaryEndFinder.FindStringSubmatch(scanner.Text())
-						if len(capture) == 2 {
-							// fmt.Printf("capture Boundary End %s\n", capture[1])
-							if activeBoundary == capture[1] {
-								state = StateBodyScan
-							}
-
-							continue
-						}
-						capture = boundaryStartFinder.FindStringSubmatch(scanner.Text())
-						if len(capture) == 2 {
-							// fmt.Printf("capture Boundary Start %s\n", capture[1])
-							state = StateContentScan
-							continue
-						}
-					}
+					fmt.Printf("Empty line in state %d\n", state)
 				}
 			}
 
-			if state == StateBodyScan { //Finalize if body read till EOF
-				// fmt.Printf("--------------------------Previous email-------------------------\n%v\n", email)
+			if state == StateHeaderScan {
+				capture := headerFinder.FindStringSubmatch(scanner.Text())
+				if len(capture) == 3 {
+					// fmt.Printf("capture Header %s : %s\n", strings.ToLower(capture[0]), strings.ToLower(capture[1]))
+					header := strings.ToLower(capture[1])
+					mandatoryHeaders |= AtLeastOneHeaderMask
+					switch header {
+					case "from":
+						previousHeader = &email.Header.From
+						mandatoryHeaders |= FromHeaderMask
+					case "to":
+						previousHeader = &email.Header.To
+						mandatoryHeaders |= ToHeaderMask
+					case "cc":
+						previousHeader = &email.Header.Cc
+					case "bcc":
+						previousHeader = &email.Header.Bcc
+						mandatoryHeaders |= ToHeaderMask
+					case "subject":
+						previousHeader = &email.Header.Subject
+					case "date":
+						previousHeader = &email.Header.Date
+						mandatoryHeaders |= DateHeaderMask
+					case "content-type":
+						previousHeader = &email.Body.ContentType
+					default:
+						previousHeader = nil
+					}
+					if previousHeader != nil {
+						*previousHeader += capture[2]
+					}
+					continue
+				}
 
-				previousHeader = nil
-				activeBoundary = ""
-				emails = append(emails, email)
-				state = StateHeaderScan
+				capture = foldingFinder.FindStringSubmatch(scanner.Text())
+				if len(capture) == 2 && previousHeader != nil {
+					*previousHeader += capture[1]
+					continue
+				}
+			} else {
+				// email.Body.Content += scanner.Text() + "\n"
+				if activeBoundary != "" {
+					capture := boundaryEndFinder.FindStringSubmatch(scanner.Text())
+					if len(capture) == 2 {
+						// fmt.Printf("capture Boundary End %s\n", capture[1])
+						if activeBoundary == capture[1] {
+							state = StateBodyScan
+							activeBoundary = ""
+						}
+
+						continue
+					}
+					// capture = boundaryStartFinder.FindStringSubmatch(scanner.Text())
+					// if len(capture) == 2 && activeBoundary == capture[1] {
+					// 	// fmt.Printf("capture Boundary Start %s\n", capture[1])
+					// 	state = StateContentScan
+					// 	continue
+					// }
+				}
 			}
-
-			fmt.Fprint(w, e.templater.ExecuteIndex(&Index{
-				MailList: template.HTML(e.templater.ExecuteMailList(emails)),
-				Folders:  "Folders",
-			}))
 		}
+
+		if state == StateBodyScan && mandatoryHeaders == AllHeaderMask { //Finalize if body read till EOF
+			// fmt.Printf("--------------------------Previous email-------------------------\n%v\n", email)
+
+			previousHeader = nil
+			activeBoundary = ""
+			emails = append(emails, email)
+			state = StateHeaderScan
+		}
+
+		fmt.Fprint(w, e.templater.ExecuteIndex(&Index{
+			MailList: template.HTML(e.templater.ExecuteMailList(emails)),
+			Folders:  "Folders",
+			Version:  Version,
+		}))
 	}
 }
 

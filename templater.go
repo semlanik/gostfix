@@ -45,6 +45,7 @@ type Templater struct {
 type Index struct {
 	Folders  template.HTML
 	MailList template.HTML
+	Version  template.HTML
 }
 
 func NewTemplater(templatesPath string) (t *Templater) {

@@ -6,15 +6,9 @@ body {
     background-color: white;
 }
 
-table {
-    border-collapse: collapse;
-    border-spacing: 0;
-}
-
 table.mailList {
     width: 100%;
     table-layout: fixed;
-    border-radius: 2pt;
     overflow: hidden;
 }
 
@@ -27,14 +21,45 @@ table.mailList {
 }
 
 .mailList tr {
-    background-color: aliceblue;
-    border-bottom: 1px solid rgb(169, 198, 223);
+    background-color: #ffffff;
+    border-bottom: 1px solid #41cd52;
     cursor: pointer;
+    transition: background-color .3s;
 }
 
 .mailList tr:hover {
-    background-color: rgb(229, 239, 248);
+    background-color: #ebffee;
 }
+
+
+/* .mailList tr:before {
+    content: "";
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+
+    display: block;
+    width: 0;
+    padding-top: 0;
+
+    border-radius: 100%;
+
+    background-color: rgba(236, 240, 241, .3);
+
+    -webkit-transform: translate(-50%, -50%);
+    -moz-transform: translate(-50%, -50%);
+    -ms-transform: translate(-50%, -50%);
+    -o-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+}
+
+.mailList tr:active:before {
+    width: 120%;
+    padding-top: 120%;
+
+    transition: width .2s ease-out, padding-top .2s ease-out;
+} */
 
 td.fromCol {
     width: 300pt;
@@ -61,7 +86,6 @@ td.dateCol {
     position: relative;
 
     display: block;
-    margin: 10pt auto;
     padding:8pt;
 
     overflow: hidden;
@@ -71,7 +95,7 @@ td.dateCol {
     border-radius: 2pt;
     box-shadow: 0 1pt 4pt rgba(0, 0, 0, .6);
 
-    background-color: #2ecc71;
+    background-color: #41cd52;
     color: #ecf0f1;
 
     font-size: 12pt;
@@ -80,7 +104,7 @@ td.dateCol {
 }
 
 .btn:hover, .btn:focus {
-    background-color: #27ae60;
+    background-color: #3ab849;
 }
 
 .btn > * {
@@ -139,10 +163,20 @@ td.dateCol {
 
 .materialLevel1 {
     box-shadow: 0 1pt 3pt rgba(0, 0, 0, .6);
-
+    margin-top: 1pt;
+    margin-bottom: 1pt;
+    margin-left: 4pt;
+    padding-right: 4pt;
 }
 
 .materialLevel2 {
     box-shadow: 0 1pt 4pt rgba(0, 0, 0, .6);
+    margin-top: 1pt;
+    margin-bottom: 1pt;
+    margin-left: 5pt;
+    padding-right: 5pt;
+}
 
+.copyrights {
+    color: #b8d4bc
 }
