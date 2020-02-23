@@ -5,20 +5,19 @@
         <link href="https://fonts.googleapis.com/css?family=Titillium+Web&display=swap" rel="stylesheet">
         <link type="text/css" href="css/index.css" rel="stylesheet">
         <link type="text/css" href="css/styles.css" rel="stylesheet">
+        <link type="text/css" href="css/controls.css" rel="stylesheet">
     </head>
     <body>
         <div>
             <div class="foldersBox">
-                <button class="btn materialLevel1" style="width: 130pt">New email</button>
+                <div class="btn materialLevel1" style="width: 110pt">New email</div>
                 {{.Folders}}
             </div>
             <div class="materialLevel1 contentBox">
                 {{.MailList}}
             </div>
             <div id="details" class="materialLevel2 contentBox emailDetails" style="display: none;">
-                    <button class="btn materialLevel1" onclick="document.getElementById('details').style.display='none';">Back</button><br/>
-                    test email
-                </div>
+            </div>
             <p class="copyrights">gostfix {{.Version}} Web interface. Copyright (c) 2020 Alexey Edelev &lt;semlanik@gmail.com&gt;</p>
         </div>
     </body>

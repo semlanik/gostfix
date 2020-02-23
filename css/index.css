@@ -20,8 +20,7 @@ table {
     margin-right: 5pt!important;
     margin-bottom: 30pt!important;
 
-    overflow-y: auto;
-    border-radius: 2pt;
+    padding: 5pt
 }
 
 .emailDetails {

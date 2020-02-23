@@ -118,7 +118,7 @@ func (e *GofixEngine) Run() {
 
 func (e *GofixEngine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.URL.Path)
-	if strings.Index(r.URL.Path, "/css/") == 0 {
+	if strings.Index(r.URL.Path, "/css/") == 0 || strings.Index(r.URL.Path, "/assets/") == 0 {
 		e.fileServer.ServeHTTP(w, r)
 	} else {
 		user := r.URL.Query().Get("user")

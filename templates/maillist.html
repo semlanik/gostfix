@@ -1,13 +1,17 @@
-<table class="mailList">
-    <tbody>
-        {{range .}}
-        <tr onclick="document.getElementById('details').style.display='block';">
-            <td class="fromCol">{{.Header.From}}</td>
-            <td class="subjCol">{{.Header.Subject}}</td>
-            <td class="dateCol">{{.Header.Date}}</td>
-        </tr>
-        {{else}}
-        <tr><td><b>Mail folder is empty</b></td>></tr>
-        {{end}}
-    </tbody>
-</table>
+<div class="scrollable">
+    <div class="fadeIn" style="position: absolute; top: 5pt; left: 0; right: 0; height: 10pt"></div>
+        <table class="mailList" >
+            <tbody>
+                {{range .}}
+                <tr onclick="document.getElementById('details').style.display='block';">
+                    <td class="fromCol">{{.Header.From}}</td>
+                    <td class="subjCol">{{.Header.Subject}}</td>
+                    <td class="dateCol">{{.Header.Date}}</td>
+                </tr>
+                {{else}}
+                <tr><td><b>Mail folder is empty</b></td>></tr>
+                {{end}}
+            </tbody>
+        </table>
+    <div class="fadeOut" style="position: absolute; bottom: 5pt; left: 0; right: 0; height:10pt"></div>
+</div>
