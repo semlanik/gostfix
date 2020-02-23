@@ -36,6 +36,7 @@ import (
 
 	common "../common"
 	utils "../utils"
+	"github.com/gorilla/sessions"
 )
 
 const (
@@ -62,16 +63,18 @@ func NewEmail() *common.Mail {
 }
 
 type Server struct {
-	fileServer http.Handler
-	templater  *Templater
-	mailPath   string
+	fileServer   http.Handler
+	templater    *Templater
+	mailPath     string
+	sessionStore *sessions.CookieStore
 }
 
 func NewServer(mailPath string) *Server {
 	return &Server{
-		templater:  NewTemplater("./data/templates"),
-		fileServer: http.FileServer(http.Dir("./data")),
-		mailPath:   mailPath,
+		templater:    NewTemplater("./data/templates"),
+		fileServer:   http.FileServer(http.Dir("./data")),
+		mailPath:     mailPath,
+		sessionStore: sessions.NewCookieStore(make([]byte, 32)),
 	}
 }
 
@@ -86,21 +89,50 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		utils.StartsWith(r.URL.Path, "/assets/") ||
 		utils.StartsWith(r.URL.Path, "/js/") {
 		s.fileServer.ServeHTTP(w, r)
-	} else if r.URL.Path == "/login.html" {
+	} else if r.URL.Path == "/login" {
+		session, _ := s.sessionStore.Get(r, "token")
+		user, ok := session.Values["user"].(string)
+		if ok && utils.RegExpUtilsInstance().UserChecker.FindString(user) == user && user != "" {
+			http.Redirect(w, r, "/mailbox", http.StatusTemporaryRedirect)
+			return
+		}
+
+		if err := r.ParseForm(); err == nil {
+			user = r.FormValue("user")
+			fmt.Printf("User form: %s\n", user)
+
+			// password := r.FormValue("password")
+			if user == "semlanik" {
+				session.Values["user"] = "semlanik"
+				session.Save(r, w)
+				http.Redirect(w, r, "/mailbox", http.StatusTemporaryRedirect)
+				return
+			}
+		}
+
 		data, _ := ioutil.ReadFile("./data/templates/login.html")
 		w.Write(data)
+	} else if r.URL.Path == "/logout" {
+		fmt.Printf("logout")
+		session, _ := s.sessionStore.Get(r, "token")
+		session.Values["user"] = ""
+		session.Save(r, w)
+		fmt.Printf("Reset user session: %s\n", session.Values["user"])
+		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
 	} else {
-		user := r.URL.Query().Get("user")
+		session, _ := s.sessionStore.Get(r, "token")
+		user, ok := session.Values["user"].(string)
 
-		if utils.RegExpUtilsInstance().UserChecker.FindString(user) != user || user == "" {
+		fmt.Printf("User session: %s\n", user)
+
+		if !ok || utils.RegExpUtilsInstance().UserChecker.FindString(user) != user || user == "" {
 			fmt.Print("Invalid user")
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprint(w, "401 - Access denied")
+			http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
 			return
 		}
 
 		// mailPath = config.mailPath + "/" + r.URL.Query().Get("user")
-		mailPath := "tmp" + "/" + r.URL.Query().Get("user")
+		mailPath := "tmp" + "/" + user
 		if !utils.FileExists(mailPath) {
 			w.WriteHeader(http.StatusForbidden)
 			fmt.Fprint(w, "403 Unknown user")
@@ -139,7 +171,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					if activeBoundary == "" {
 						previousHeader = nil
 						activeBoundary = ""
-						fmt.Printf("Actual headers: %d\n", mandatoryHeaders)
+						// fmt.Printf("Actual headers: %d\n", mandatoryHeaders)
 						if mandatoryHeaders == AllHeaderMask {
 							emails = append(emails, email)
 						}
@@ -147,11 +179,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						state = StateHeaderScan
 						mandatoryHeaders = 0
 					} else {
-						fmt.Printf("Still in body scan\n")
+						// fmt.Printf("Still in body scan\n")
 						continue
 					}
 				} else {
-					fmt.Printf("Empty line in state %d\n", state)
+					// fmt.Printf("Empty line in state %d\n", state)
 				}
 			}
 
