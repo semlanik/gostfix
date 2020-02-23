@@ -23,40 +23,64 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package main
+package utils
 
 import (
 	"os"
 
-	scanner "./scanner"
-	web "./web"
+	unix "golang.org/x/sys/unix"
 )
 
-type GofixEngine struct {
-	scanner *scanner.MailScanner
-	web     *web.Server
+func FileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return err == nil && !info.IsDir() && info != nil
 }
 
-func NewGofixEngine(mailPath string) (e *GofixEngine) {
-	e = &GofixEngine{
-		scanner: scanner.NewMailScanner(mailPath),
-		web:     web.NewServer(mailPath),
+func DirectoryExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return err == nil && info.IsDir() && info != nil
+}
+
+type LockedFile struct {
+	file *os.File
+	lock *unix.Flock_t
+}
+
+func OpenAndLockWait(path string) (file *LockedFile, err error) {
+	file = &LockedFile{}
+	file.file, err = os.OpenFile(path, os.O_RDWR, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	file.lock = &unix.Flock_t{
+		Type: unix.F_WRLCK,
+	}
+	err = unix.FcntlFlock(file.file.Fd(), unix.F_SETLKW, file.lock)
+	file.lock.Type = unix.F_UNLCK
+
+	if err != nil {
+		return nil, err
 	}
 
 	return
 }
 
-func (e *GofixEngine) Run() {
-	defer e.scanner.Stop()
-	e.scanner.Run()
-	e.web.Run()
+func (f *LockedFile) Read(p []byte) (n int, err error) {
+	return f.file.Read(p)
 }
 
-func main() {
-	mailPath := "."
-	if len(os.Args) >= 2 {
-		mailPath = os.Args[1]
+func (f *LockedFile) CloseAndUnlock() error {
+	err1 := unix.FcntlFlock(f.file.Fd(), unix.F_SETLKW, f.lock)
+	err2 := f.file.Close()
+	if err1 != nil {
+		return err1
 	}
-	engine := NewGofixEngine(mailPath)
-	engine.Run()
+	return err2
 }

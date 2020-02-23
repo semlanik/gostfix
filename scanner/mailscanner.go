@@ -23,72 +23,69 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package main
+package scanner
 
 import (
-	"bytes"
-	template "html/template"
+	"fmt"
 	ioutil "io/ioutil"
 	"log"
+
+	utils "../utils"
+	fsnotify "github.com/fsnotify/fsnotify"
 )
 
-const (
-	IndexTemplateName    = "index.html"
-	MailListTemplateName = "maillist.html"
-)
-
-type Templater struct {
-	indexTemplate    *template.Template
-	mailListTemplate *template.Template
+type MailScanner struct {
+	watcher *fsnotify.Watcher
 }
 
-type Index struct {
-	Folders  template.HTML
-	MailList template.HTML
-	Version  template.HTML
-}
-
-func NewTemplater(templatesPath string) (t *Templater) {
-	t = nil
-	index, err := parseTemplate(templatesPath + "/" + IndexTemplateName)
+func NewMailScanner(mailPath string) (ms *MailScanner) {
+	fmt.Printf("Add mail folder %s for watching\n", mailPath)
+	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	maillist, err := parseTemplate(templatesPath + "/" + MailListTemplateName)
+	ms = &MailScanner{
+		watcher: watcher,
+	}
+
+	files, err := ioutil.ReadDir(mailPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	t = &Templater{
-		indexTemplate:    index,
-		mailListTemplate: maillist,
+	for _, f := range files {
+		fullPath := mailPath + "/" + f.Name()
+		if utils.FileExists(fullPath) {
+			fmt.Printf("Add mail file %s for watching\n", fullPath)
+			watcher.Add(fullPath)
+		}
 	}
+
 	return
 }
 
-func parseTemplate(path string) (*template.Template, error) {
-	content, err := ioutil.ReadFile(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return template.New("Index").Parse(string(content))
+func (ms *MailScanner) Run() {
+	go func() {
+		for {
+			select {
+			case event, ok := <-ms.watcher.Events:
+				if !ok {
+					return
+				}
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					log.Println("New email for", event.Name)
+				}
+			case err, ok := <-ms.watcher.Errors:
+				if !ok {
+					return
+				}
+				log.Println("error:", err)
+			}
+		}
+	}()
 }
 
-func (t *Templater) ExecuteIndex(content interface{}) string {
-	return executeTemplateCommon(t.indexTemplate, content)
-}
-
-func (t *Templater) ExecuteMailList(mailList interface{}) string {
-	return executeTemplateCommon(t.mailListTemplate, mailList)
-}
-
-func executeTemplateCommon(t *template.Template, values interface{}) string {
-	buffer := &bytes.Buffer{}
-	err := t.Execute(buffer, values)
-	if err != nil {
-		log.Printf("Could not execute template: %s", err)
-	}
-	return buffer.String()
+func (ms *MailScanner) Stop() {
+	defer ms.watcher.Close()
 }

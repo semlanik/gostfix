@@ -23,40 +23,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package main
+package common
 
-import (
-	"os"
-
-	scanner "./scanner"
-	web "./web"
+const (
+	Version = "0.1.0 alpha"
 )
-
-type GofixEngine struct {
-	scanner *scanner.MailScanner
-	web     *web.Server
-}
-
-func NewGofixEngine(mailPath string) (e *GofixEngine) {
-	e = &GofixEngine{
-		scanner: scanner.NewMailScanner(mailPath),
-		web:     web.NewServer(mailPath),
-	}
-
-	return
-}
-
-func (e *GofixEngine) Run() {
-	defer e.scanner.Stop()
-	e.scanner.Run()
-	e.web.Run()
-}
-
-func main() {
-	mailPath := "."
-	if len(os.Args) >= 2 {
-		mailPath = os.Args[1]
-	}
-	engine := NewGofixEngine(mailPath)
-	engine.Run()
-}

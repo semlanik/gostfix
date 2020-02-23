@@ -1,7 +1,7 @@
 export GOPATH=$PWD
 export PATH=$PATH:$PWD/bin
 export GOBIN=$PWD/bin
-export RPC_PATH=$PWD
+export RPC_PATH=$PWD/common
 
 go get github.com/golang/protobuf/protoc-gen-go
 go install ./src/github.com/golang/protobuf/protoc-gen-go

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package main;
+package common;
 
 message MailBody {
     string contentType = 1;
