@@ -11,7 +11,7 @@
     box-shadow: 0 1pt 4pt rgba(0, 0, 0, .6);
 
     background-color: #41cd52;
-    color: #ecf0f1;
+    color: #ffffff;
 
     font-size: 12pt;
     font-weight: bold;
@@ -90,4 +90,116 @@
     background: -o-linear-gradient(top, rgba(255, 255, 255, 1) 0%, rgba(0, 0, 0, 0) 100%); /* Opera 11.10+ */
     background: -ms-linear-gradient(top, rgba(255, 255, 255, 1) 0%,  rgba(0, 0, 0, 0) 100%); /* IE10+ */
     background: linear-gradient(to bottom, rgba(255, 255, 255, 1) 0%,  rgba(0, 0, 0, 0) 100%); /* W3C */
+}
+  
+/*Input fields*/
+.inpt {
+    position:relative; 
+    margin-top: 20pt;
+    margin-bottom: 50px; 
+}
+
+.inpt input {
+    font-size: 16pt;
+    padding: 9pt 9pt 4pt 4pt;
+    display: block;
+    width: 200pt;
+    border: none;
+    border-bottom: 1pt solid #3ab849;
+}
+
+.inpt input:invalid {
+    outline: none;
+}
+.inpt input:focus {
+    outline: none;
+}
+
+.inpt input:required {
+    box-shadow: none;
+}
+
+.inpt label {
+    color: #000000; 
+    font-size: 18pt;
+    font-weight: normal;
+    position: absolute;
+    pointer-events: none;
+    left: 5pt;
+    top: 10pt;
+    transition: 0.2s ease all; 
+    -moz-transition: 0.2s ease all; 
+    -webkit-transition: 0.2s ease all;
+}
+  
+.inpt input:focus ~ label {
+    top: -20pt;
+    font-size: 12pt;
+    color: #000000;
+}
+
+.inpt input:valid ~ label {
+    top: -20pt;
+    font-size: 12pt;
+    color: #000000;
+}
+.inpt .bar {
+    position: relative;
+    display: block;
+    width: 213pt;
+}
+
+.inpt .bar:before, .bar:after {
+    content: '';
+    height: 2pt;
+    width: 0;
+    bottom: 0; 
+    position: absolute;
+    background: #3ab849; 
+    transition: 0.2s ease all; 
+    -moz-transition: 0.2s ease all; 
+    -webkit-transition: 0.2s ease all;
+}
+
+.inpt .bar:before {
+    left:50%;
+}
+
+.inpt .bar:after {
+    right:50%; 
+}
+  
+.inpt input:focus ~ .bar:before, input:focus ~ .bar:after {
+    width:50%;
+}
+  
+.inpt .highlight {
+    position: absolute;
+    height:75%;
+    width: 213pt;
+    bottom: 4pt; 
+    left:0;
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.inpt input:focus ~ .highlight {
+    -webkit-animation:inputHighlighter 0.3s ease;
+    -moz-animation:inputHighlighter 0.3s ease;
+    animation:inputHighlighter 0.3s ease;
+}
+
+@-webkit-keyframes inputHighlighter {
+    from { background:#ebffee; }
+    to { width:0; background:transparent; }
+}
+
+@-moz-keyframes inputHighlighter {
+    from { background:#ebffee; }
+    to { width:0; background:transparent; }
+}
+
+@keyframes inputHighlighter {
+    from { background:#ebffee; }
+    to { width:0; background:transparent; }
 }

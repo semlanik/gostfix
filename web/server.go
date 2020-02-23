@@ -29,6 +29,7 @@ import (
 	"bufio"
 	"fmt"
 	template "html/template"
+	ioutil "io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -68,8 +69,8 @@ type Server struct {
 
 func NewServer(mailPath string) *Server {
 	return &Server{
-		templater:  NewTemplater("templates"),
-		fileServer: http.FileServer(http.Dir(".")),
+		templater:  NewTemplater("./data/templates"),
+		fileServer: http.FileServer(http.Dir("./data")),
 		mailPath:   mailPath,
 	}
 }
@@ -81,8 +82,13 @@ func (s *Server) Run() {
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.URL.Path)
-	if strings.Index(r.URL.Path, "/css/") == 0 || strings.Index(r.URL.Path, "/assets/") == 0 {
+	if utils.StartsWith(r.URL.Path, "/css/") ||
+		utils.StartsWith(r.URL.Path, "/assets/") ||
+		utils.StartsWith(r.URL.Path, "/js/") {
 		s.fileServer.ServeHTTP(w, r)
+	} else if r.URL.Path == "/login.html" {
+		data, _ := ioutil.ReadFile("./data/templates/login.html")
+		w.Write(data)
 	} else {
 		user := r.URL.Query().Get("user")
 

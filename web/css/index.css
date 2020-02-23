@@ -8,6 +8,15 @@ table {
     border-spacing: 0;
 }
 
+.main {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin-bottom: 30pt!important;
+}
+
 .contentBox {
     position: absolute;
     top: 0;
@@ -18,8 +27,7 @@ table {
     margin-left: 150pt!important;
     margin-top: 5pt!important;
     margin-right: 5pt!important;
-    margin-bottom: 30pt!important;
-
+    
     padding: 5pt
 }
 

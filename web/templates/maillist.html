@@ -3,7 +3,7 @@
         <table class="mailList" >
             <tbody>
                 {{range .}}
-                <tr onclick="document.getElementById('details').style.display='block';">
+                <tr onclick="openEmail('someid');">
                     <td class="fromCol">{{.Header.From}}</td>
                     <td class="subjCol">{{.Header.Subject}}</td>
                     <td class="dateCol">{{.Header.Date}}</td>
