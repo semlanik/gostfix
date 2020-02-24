@@ -26,13 +26,70 @@
 package auth
 
 import (
+	"bufio"
+	"log"
+	"os"
+	"strings"
+
+	config "../config"
 	utils "../utils"
 )
 
-func Authenticate(email string, password string) bool {
-	if !utils.RegExpUtilsInstance().EmailChecker.MatchString(email) {
+type Authenticator struct {
+	mailMaps map[string]string //TODO: temporary here. Later should be part of mailscanner and never accessed from here
+}
+
+func NewAuthenticator() (a *Authenticator) {
+	a = &Authenticator{
+		mailMaps: readMailMaps(), //TODO: temporary here. Later should be part of mailscanner and never accessed from here
+	}
+	return
+}
+
+func (a *Authenticator) Authenticate(user, password string) (string, bool) {
+	if !utils.RegExpUtilsInstance().EmailChecker.MatchString(user) {
+		return "", false
+	}
+	_, ok := a.mailMaps[user]
+
+	return "", ok
+}
+
+func (a *Authenticator) Verify(user, token string) bool {
+	if !utils.RegExpUtilsInstance().EmailChecker.MatchString(user) {
 		return false
 	}
+	_, ok := a.mailMaps[user]
 
-	return false
+	return ok
+}
+
+func (a *Authenticator) MailPath(user string) string { //TODO: temporary here. Later should be part of mailscanner and never accessed from here
+	return a.mailMaps[user]
+}
+
+func readMailMaps() map[string]string { //TODO: temporary here. Later should be part of mailscanner and never accessed from here
+	mailMaps := make(map[string]string)
+	mapsFile := config.ConfigInstance().VMailboxMaps
+	if !utils.FileExists(mapsFile) {
+		return mailMaps
+	}
+
+	file, err := os.Open(mapsFile)
+	if err != nil {
+		log.Fatalf("Unable to open virtual mailbox maps %s\n", mapsFile)
+	}
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		mailPathPair := strings.Split(scanner.Text(), " ")
+		if len(mailPathPair) != 2 {
+			log.Printf("Invalid record in virtual mailbox maps %s", scanner.Text())
+			continue
+		}
+		mailMaps[mailPathPair[0]] = mailPathPair[1]
+	}
+
+	return mailMaps
 }

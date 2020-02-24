@@ -37,6 +37,7 @@ const (
 	MailListTemplateName = "maillist.html"
 	DetailsTemplateName  = "details.html"
 	ErrorTemplateName    = "error.html"
+	LoginTemplateName    = "login.html"
 )
 
 type Templater struct {
@@ -44,17 +45,22 @@ type Templater struct {
 	mailListTemplate *template.Template
 	detailsTemplate  *template.Template
 	errorTemplate    *template.Template
+	loginTemplate    *template.Template
 }
 
-type Index struct {
+type IndexTemplateData struct {
 	Folders  template.HTML
 	MailList template.HTML
 	Version  template.HTML
 }
 
-type Error struct {
+type ErrorTemplateData struct {
 	Code    int
-	String  string
+	Text    string
+	Version string
+}
+
+type LoginTemplateData struct {
 	Version string
 }
 
@@ -80,11 +86,17 @@ func NewTemplater(templatesPath string) (t *Templater) {
 		log.Fatal(err)
 	}
 
+	login, err := parseTemplate(templatesPath + "/" + LoginTemplateName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	t = &Templater{
 		indexTemplate:    index,
 		mailListTemplate: maillist,
 		detailsTemplate:  details,
 		errorTemplate:    errors,
+		loginTemplate:    login,
 	}
 	return
 }
@@ -98,20 +110,24 @@ func parseTemplate(path string) (*template.Template, error) {
 	return template.New("Index").Parse(string(content))
 }
 
-func (t *Templater) ExecuteIndex(content interface{}) string {
-	return executeTemplateCommon(t.indexTemplate, content)
+func (t *Templater) ExecuteIndex(data interface{}) string {
+	return executeTemplateCommon(t.indexTemplate, data)
 }
 
-func (t *Templater) ExecuteMailList(mailList interface{}) string {
-	return executeTemplateCommon(t.mailListTemplate, mailList)
+func (t *Templater) ExecuteMailList(data interface{}) string {
+	return executeTemplateCommon(t.mailListTemplate, data)
 }
 
-func (t *Templater) ExecuteDetails(details interface{}) string {
-	return executeTemplateCommon(t.detailsTemplate, details)
+func (t *Templater) ExecuteDetails(data interface{}) string {
+	return executeTemplateCommon(t.detailsTemplate, data)
 }
 
-func (t *Templater) ExecuteError(err interface{}) string {
-	return executeTemplateCommon(t.errorTemplate, err)
+func (t *Templater) ExecuteError(data interface{}) string {
+	return executeTemplateCommon(t.errorTemplate, data)
+}
+
+func (t *Templater) ExecuteLogin(data interface{}) string {
+	return executeTemplateCommon(t.loginTemplate, data)
 }
 
 func executeTemplateCommon(t *template.Template, values interface{}) string {
