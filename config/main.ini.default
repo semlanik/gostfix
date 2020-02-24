@@ -1,4 +1,1 @@
-#Path to virtual maildir
-virtual_mailbox_base=
-#Virtual mailboxes maps
-virtual_mailbox_maps=
+postfix_config = /etc/postfix/main.cf

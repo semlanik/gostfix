@@ -11,22 +11,10 @@
     </head>
     <body>
         <div style="width: 100%; height: 100%; display:flex; justify-content: center; align-items: center;">
-            <div>
-                <form method="POST" action="/login">
-                    <div class="inpt">
-                        <input name="user" type="text" required>
-                        <span class="highlight"></span>
-                        <span class="bar"></span>
-                        <label>Email</label>
-                    </div>
-                    <div class="inpt">
-                        <input name="password" type="password" required>
-                        <span class="highlight"></span>
-                        <span class="bar"></span>
-                        <label>Password</label>
-                    </div>
-                    <input type="submit" style="visibility: hidden;" />
-                </form>
+            <img src="assets/error.svg" height="100pt"/>
+            <div style="display: block;">
+                <span style="font-size: 24pt;">{{.Code}}</span></br>
+                <span style="font-size: 14pt;">{{.String}}</span>
             </div>
         </div>
         <p class="copyrights">gostfix {{.Version}} Web interface. Copyright (c) 2020 Alexey Edelev &lt;semlanik@gmail.com&gt;</p>

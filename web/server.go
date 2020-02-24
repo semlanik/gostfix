@@ -32,9 +32,11 @@ import (
 	ioutil "io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	common "../common"
+	config "../config"
 	utils "../utils"
 	"github.com/gorilla/sessions"
 )
@@ -63,17 +65,17 @@ func NewEmail() *common.Mail {
 }
 
 type Server struct {
+	mailMaps     map[string]string //TODO: Temporary
 	fileServer   http.Handler
 	templater    *Templater
-	mailPath     string
 	sessionStore *sessions.CookieStore
 }
 
-func NewServer(mailPath string) *Server {
+func NewServer() *Server {
 	return &Server{
+		mailMaps:     readMailMaps(), //TODO: Temporary
 		templater:    NewTemplater("./data/templates"),
 		fileServer:   http.FileServer(http.Dir("./data")),
-		mailPath:     mailPath,
 		sessionStore: sessions.NewCookieStore(make([]byte, 32)),
 	}
 }
@@ -92,24 +94,26 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else if r.URL.Path == "/login" {
 		session, _ := s.sessionStore.Get(r, "token")
 		user, ok := session.Values["user"].(string)
-		if ok && utils.RegExpUtilsInstance().UserChecker.FindString(user) == user && user != "" {
+		if !ok || user == "" {
+			user = ""
+			if err := r.ParseForm(); err == nil {
+				user = r.FormValue("user")
+			}
+		}
+
+		_, ok = s.mailMaps[user]
+		if utils.RegExpUtilsInstance().EmailChecker.MatchString(user) &&
+			user != "" && ok {
+			session.Values["user"] = user
+			session.Save(r, w)
 			http.Redirect(w, r, "/mailbox", http.StatusTemporaryRedirect)
 			return
 		}
 
-		if err := r.ParseForm(); err == nil {
-			user = r.FormValue("user")
-			fmt.Printf("User form: %s\n", user)
+		session.Values["user"] = ""
+		session.Save(r, w)
 
-			// password := r.FormValue("password")
-			if user == "semlanik" {
-				session.Values["user"] = "semlanik"
-				session.Save(r, w)
-				http.Redirect(w, r, "/mailbox", http.StatusTemporaryRedirect)
-				return
-			}
-		}
-
+		fmt.Printf("Actual user: %s, Actual map: %v\n", user, s.mailMaps)
 		data, _ := ioutil.ReadFile("./data/templates/login.html")
 		w.Write(data)
 	} else if r.URL.Path == "/logout" {
@@ -119,30 +123,56 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		session.Save(r, w)
 		fmt.Printf("Reset user session: %s\n", session.Values["user"])
 		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
+	} else if r.URL.Path == "/messageDetails" {
+		fmt.Fprint(w, s.templater.ExecuteDetails(""))
 	} else {
 		session, _ := s.sessionStore.Get(r, "token")
 		user, ok := session.Values["user"].(string)
 
 		fmt.Printf("User session: %s\n", user)
 
-		if !ok || utils.RegExpUtilsInstance().UserChecker.FindString(user) != user || user == "" {
+		if !ok || utils.RegExpUtilsInstance().EmailChecker.FindString(user) != user || user == "" {
 			fmt.Print("Invalid user")
 			http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
 			return
 		}
 
-		// mailPath = config.mailPath + "/" + r.URL.Query().Get("user")
-		mailPath := "tmp" + "/" + user
+		mailRelPath, ok := s.mailMaps[user]
+		if !ok {
+			fmt.Print("Invalid user")
+			http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
+			return
+		}
+
+		mailPath := config.ConfigInstance().VMailboxBase + "/" + mailRelPath
 		if !utils.FileExists(mailPath) {
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Fprint(w, "403 Unknown user")
+			fmt.Printf("logout")
+			session, _ := s.sessionStore.Get(r, "token")
+			session.Values["user"] = ""
+			session.Save(r, w)
+			fmt.Printf("Reset user session: %s\n", session.Values["user"])
+
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, s.templater.ExecuteError(&Error{
+				Code:   http.StatusInternalServerError,
+				String: "Unable to access your mailbox. Please contact Administrator.",
+			}))
 			return
 		}
 
 		file, err := utils.OpenAndLockWait(mailPath)
 		if err != nil {
+			fmt.Printf("logout")
+			session, _ := s.sessionStore.Get(r, "token")
+			session.Values["user"] = ""
+			session.Save(r, w)
+			fmt.Printf("Reset user session: %s\n", session.Values["user"])
+
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, "500 Internal server error")
+			fmt.Fprint(w, s.templater.ExecuteError(&Error{
+				Code:   http.StatusInternalServerError,
+				String: "Unable to access your mailbox. Please contact Administrator.",
+			}))
 			return
 		}
 
@@ -264,4 +294,30 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Version:  common.Version,
 		}))
 	}
+}
+
+func readMailMaps() map[string]string { //TODO: Temporary
+	mailMaps := make(map[string]string)
+	mapsFile := config.ConfigInstance().VMailboxMaps
+	if !utils.FileExists(mapsFile) {
+		return mailMaps
+	}
+
+	file, err := os.Open(mapsFile)
+	if err != nil {
+		log.Fatalf("Unable to open virtual mailbox maps %s\n", mapsFile)
+	}
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		mailPathPair := strings.Split(scanner.Text(), " ")
+		if len(mailPathPair) != 2 {
+			log.Printf("Invalid record in virtual mailbox maps %s", scanner.Text())
+			continue
+		}
+		mailMaps[mailPathPair[0]] = mailPathPair[1]
+	}
+
+	return mailMaps
 }

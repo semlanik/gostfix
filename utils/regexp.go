@@ -40,7 +40,8 @@ const (
 )
 
 const (
-	UserRegExp = "^[a-zA-Z][\\w0-9\\._]*"
+	DomainRegExp = "(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]"
+	EmailRegExp  = "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\\])"
 )
 
 type RegExpUtils regExpUtils
@@ -60,7 +61,8 @@ func RegExpUtilsInstance() *RegExpUtils {
 }
 
 type regExpUtils struct {
-	UserChecker         *regexp.Regexp
+	DomainChecker       *regexp.Regexp
+	EmailChecker        *regexp.Regexp
 	HeaderFinder        *regexp.Regexp
 	FoldingFinder       *regexp.Regexp
 	BoundaryStartFinder *regexp.Regexp
@@ -99,19 +101,26 @@ func newRegExpUtils() (*regExpUtils, error) {
 		return nil, err
 	}
 
-	userChecker, err := regexp.Compile(UserRegExp)
+	domainChecker, err := regexp.Compile(DomainRegExp)
+	if err != nil {
+		log.Fatalf("Invalid regexp %s\n", err)
+		return nil, err
+	}
+
+	emailChecker, err := regexp.Compile(EmailRegExp)
 	if err != nil {
 		log.Fatalf("Invalid regexp %s\n", err)
 		return nil, err
 	}
 
 	ru := &regExpUtils{
-		UserChecker:         userChecker,
+		EmailChecker:        emailChecker,
 		HeaderFinder:        headerFinder,
 		FoldingFinder:       foldingFinder,
 		BoundaryStartFinder: boundaryStartFinder,
 		BoundaryEndFinder:   boundaryEndFinder,
 		BoundaryFinder:      boundaryFinder,
+		DomainChecker:       domainChecker,
 	}
 
 	return ru, nil

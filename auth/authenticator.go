@@ -23,43 +23,16 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-var detailsUrl = "details/"
+package auth
 
-$(document).ready(function(){
-    $.ajaxSetup({
-        global: false,
-        type: "POST"
-    })
-    $(window).bind('hashchange', requestDetails);
-    requestDetails();
-})
+import (
+	utils "../utils"
+)
 
-function openEmail(id) {
-    window.location.hash = detailsUrl + id
-}
+func Authenticate(email string, password string) bool {
+	if !utils.RegExpUtilsInstance().EmailChecker.MatchString(email) {
+		return false
+	}
 
-function requestDetails() {
-    var hashLocation = window.location.hash
-    if (hashLocation.startsWith("#" + detailsUrl)) {
-        var messageId = hashLocation.replace(/^#details\//, "")
-        if (messageId != "") {
-            $.ajax({
-                url: "/messageDetails",
-                data: {detailsUrl: messageId},
-                success: function(result) {
-                    $("#details").html(result);
-                    $("#details").show()
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    window.location.hash = ""
-                }
-            })
-        }
-    } else {
-        $("#details").hide()
-    }
-}
-
-function closeDetails() {
-    window.location.hash = ""
+	return false
 }

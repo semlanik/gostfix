@@ -35,17 +35,27 @@ import (
 const (
 	IndexTemplateName    = "index.html"
 	MailListTemplateName = "maillist.html"
+	DetailsTemplateName  = "details.html"
+	ErrorTemplateName    = "error.html"
 )
 
 type Templater struct {
 	indexTemplate    *template.Template
 	mailListTemplate *template.Template
+	detailsTemplate  *template.Template
+	errorTemplate    *template.Template
 }
 
 type Index struct {
 	Folders  template.HTML
 	MailList template.HTML
 	Version  template.HTML
+}
+
+type Error struct {
+	Code    int
+	String  string
+	Version string
 }
 
 func NewTemplater(templatesPath string) (t *Templater) {
@@ -60,9 +70,21 @@ func NewTemplater(templatesPath string) (t *Templater) {
 		log.Fatal(err)
 	}
 
+	details, err := parseTemplate(templatesPath + "/" + DetailsTemplateName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	errors, err := parseTemplate(templatesPath + "/" + ErrorTemplateName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	t = &Templater{
 		indexTemplate:    index,
 		mailListTemplate: maillist,
+		detailsTemplate:  details,
+		errorTemplate:    errors,
 	}
 	return
 }
@@ -82,6 +104,14 @@ func (t *Templater) ExecuteIndex(content interface{}) string {
 
 func (t *Templater) ExecuteMailList(mailList interface{}) string {
 	return executeTemplateCommon(t.mailListTemplate, mailList)
+}
+
+func (t *Templater) ExecuteDetails(details interface{}) string {
+	return executeTemplateCommon(t.detailsTemplate, details)
+}
+
+func (t *Templater) ExecuteError(err interface{}) string {
+	return executeTemplateCommon(t.errorTemplate, err)
 }
 
 func executeTemplateCommon(t *template.Template, values interface{}) string {

@@ -23,43 +23,4 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-var detailsUrl = "details/"
-
-$(document).ready(function(){
-    $.ajaxSetup({
-        global: false,
-        type: "POST"
-    })
-    $(window).bind('hashchange', requestDetails);
-    requestDetails();
-})
-
-function openEmail(id) {
-    window.location.hash = detailsUrl + id
-}
-
-function requestDetails() {
-    var hashLocation = window.location.hash
-    if (hashLocation.startsWith("#" + detailsUrl)) {
-        var messageId = hashLocation.replace(/^#details\//, "")
-        if (messageId != "") {
-            $.ajax({
-                url: "/messageDetails",
-                data: {detailsUrl: messageId},
-                success: function(result) {
-                    $("#details").html(result);
-                    $("#details").show()
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    window.location.hash = ""
-                }
-            })
-        }
-    } else {
-        $("#details").hide()
-    }
-}
-
-function closeDetails() {
-    window.location.hash = ""
-}
+package auth

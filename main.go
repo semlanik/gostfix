@@ -26,8 +26,6 @@
 package main
 
 import (
-	"os"
-
 	scanner "./scanner"
 	web "./web"
 )
@@ -37,10 +35,10 @@ type GofixEngine struct {
 	web     *web.Server
 }
 
-func NewGofixEngine(mailPath string) (e *GofixEngine) {
+func NewGofixEngine() (e *GofixEngine) {
 	e = &GofixEngine{
-		scanner: scanner.NewMailScanner(mailPath),
-		web:     web.NewServer(mailPath),
+		scanner: scanner.NewMailScanner(),
+		web:     web.NewServer(),
 	}
 
 	return
@@ -53,10 +51,6 @@ func (e *GofixEngine) Run() {
 }
 
 func main() {
-	mailPath := "."
-	if len(os.Args) >= 2 {
-		mailPath = os.Args[1]
-	}
-	engine := NewGofixEngine(mailPath)
+	engine := NewGofixEngine()
 	engine.Run()
 }

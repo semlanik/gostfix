@@ -26,19 +26,24 @@
 package scanner
 
 import (
+	"bufio"
 	"fmt"
-	ioutil "io/ioutil"
 	"log"
+	"os"
+	"strings"
 
+	config "../config"
 	utils "../utils"
 	fsnotify "github.com/fsnotify/fsnotify"
 )
 
 type MailScanner struct {
-	watcher *fsnotify.Watcher
+	watcher  *fsnotify.Watcher
+	mailMaps map[string]string
 }
 
-func NewMailScanner(mailPath string) (ms *MailScanner) {
+func NewMailScanner() (ms *MailScanner) {
+	mailPath := config.ConfigInstance().VMailboxBase
 	fmt.Printf("Add mail folder %s for watching\n", mailPath)
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -46,16 +51,12 @@ func NewMailScanner(mailPath string) (ms *MailScanner) {
 	}
 
 	ms = &MailScanner{
-		watcher: watcher,
+		watcher:  watcher,
+		mailMaps: readMailMaps(),
 	}
 
-	files, err := ioutil.ReadDir(mailPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, f := range files {
-		fullPath := mailPath + "/" + f.Name()
+	for _, f := range ms.mailMaps {
+		fullPath := mailPath + "/" + f
 		if utils.FileExists(fullPath) {
 			fmt.Printf("Add mail file %s for watching\n", fullPath)
 			watcher.Add(fullPath)
@@ -63,6 +64,32 @@ func NewMailScanner(mailPath string) (ms *MailScanner) {
 	}
 
 	return
+}
+
+func readMailMaps() map[string]string {
+	mailMaps := make(map[string]string)
+	mapsFile := config.ConfigInstance().VMailboxMaps
+	if !utils.FileExists(mapsFile) {
+		return mailMaps
+	}
+
+	file, err := os.Open(mapsFile)
+	if err != nil {
+		log.Fatalf("Unable to open virtual mailbox maps %s\n", mapsFile)
+	}
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		mailPathPair := strings.Split(scanner.Text(), " ")
+		if len(mailPathPair) != 2 {
+			log.Printf("Invalid record in virtual mailbox maps %s", scanner.Text())
+			continue
+		}
+		mailMaps[mailPathPair[0]] = mailPathPair[1]
+	}
+
+	return mailMaps
 }
 
 func (ms *MailScanner) Run() {
