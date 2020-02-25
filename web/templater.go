@@ -33,19 +33,21 @@ import (
 )
 
 const (
-	IndexTemplateName    = "index.html"
-	MailListTemplateName = "maillist.html"
-	DetailsTemplateName  = "details.html"
-	ErrorTemplateName    = "error.html"
-	LoginTemplateName    = "login.html"
+	IndexTemplateName      = "index.html"
+	MailListTemplateName   = "maillist.html"
+	DetailsTemplateName    = "details.html"
+	ErrorTemplateName      = "error.html"
+	LoginTemplateName      = "login.html"
+	StatusLineTemplateName = "statusline.html"
 )
 
 type Templater struct {
-	indexTemplate    *template.Template
-	mailListTemplate *template.Template
-	detailsTemplate  *template.Template
-	errorTemplate    *template.Template
-	loginTemplate    *template.Template
+	indexTemplate      *template.Template
+	mailListTemplate   *template.Template
+	detailsTemplate    *template.Template
+	errorTemplate      *template.Template
+	loginTemplate      *template.Template
+	statusLineTemplate *template.Template
 }
 
 type IndexTemplateData struct {
@@ -62,6 +64,12 @@ type ErrorTemplateData struct {
 
 type LoginTemplateData struct {
 	Version string
+}
+
+type StatusLineTemplateData struct {
+	Name   string
+	Read   int
+	Unread int
 }
 
 func NewTemplater(templatesPath string) (t *Templater) {
@@ -91,12 +99,18 @@ func NewTemplater(templatesPath string) (t *Templater) {
 		log.Fatal(err)
 	}
 
+	statusLine, err := parseTemplate(templatesPath + "/" + StatusLineTemplateName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	t = &Templater{
-		indexTemplate:    index,
-		mailListTemplate: maillist,
-		detailsTemplate:  details,
-		errorTemplate:    errors,
-		loginTemplate:    login,
+		indexTemplate:      index,
+		mailListTemplate:   maillist,
+		detailsTemplate:    details,
+		errorTemplate:      errors,
+		loginTemplate:      login,
+		statusLineTemplate: statusLine,
 	}
 	return
 }
@@ -128,6 +142,10 @@ func (t *Templater) ExecuteError(data interface{}) string {
 
 func (t *Templater) ExecuteLogin(data interface{}) string {
 	return executeTemplateCommon(t.loginTemplate, data)
+}
+
+func (t *Templater) ExecuteStatusLine(data interface{}) string {
+	return executeTemplateCommon(t.statusLineTemplate, data)
 }
 
 func executeTemplateCommon(t *template.Template, values interface{}) string {

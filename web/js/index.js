@@ -32,6 +32,7 @@ $(document).ready(function(){
     })
     $(window).bind('hashchange', requestDetails);
     requestDetails();
+    loadStatusLine();
 })
 
 function openEmail(id) {
@@ -62,4 +63,16 @@ function requestDetails() {
 
 function closeDetails() {
     window.location.hash = ""
+}
+
+function loadStatusLine() {
+    $.ajax({
+        url: "/statusLine",
+        success: function(result) {
+            $("#statusLine").html(result);
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            //TODO: some toast message here once implemented
+        }
+    })
 }

@@ -19,7 +19,7 @@ table {
 
 .contentBox {
     position: absolute;
-    top: 0;
+    top: 40pt;
     left: 0;
     right: 0;
     bottom: 0;
@@ -27,7 +27,7 @@ table {
     margin-left: 150pt!important;
     margin-top: 5pt!important;
     margin-right: 5pt!important;
-    
+
     padding: 5pt
 }
 
@@ -49,6 +49,15 @@ table {
 
     overflow-y: auto;
     width: 150pt;
+}
+
+#statusLine {
+    position: absolute;
+    top: 0;
+    font-size: 16pt;
+    left: 150pt;
+    height: 40pt;
+    padding: 5pt
 }
 
 .copyrights {

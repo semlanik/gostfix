@@ -77,8 +77,8 @@ type Server struct {
 func NewServer() *Server {
 	return &Server{
 		authenticator: auth.NewAuthenticator(),
-		templater:     NewTemplater("./data/templates"),
-		fileServer:    http.FileServer(http.Dir("./data")),
+		templater:     NewTemplater("data/templates"),
+		fileServer:    http.FileServer(http.Dir("data")),
 		sessionStore:  sessions.NewCookieStore(make([]byte, 32)),
 	}
 }
@@ -102,6 +102,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			s.handleLogout(w, r)
 		case "/messageDetails":
 			s.handleMessageDetails(w, r)
+		case "/statusLine":
+			s.handleStatusLine(w, r)
 		default:
 			s.handleMailbox(w, r)
 		}
@@ -109,55 +111,78 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
+	//Check passed in form login/password pair first
 	if err := r.ParseForm(); err == nil {
 		user := r.FormValue("user")
 		password := r.FormValue("password")
 		token, ok := s.authenticator.Authenticate(user, password)
 		if ok {
-			s.Login(user, token, w, r)
+			s.login(user, token, w, r)
 			return
 		}
 	}
 
+	//Check if user already logged in and entered login page accidently
 	if s.authenticator.Verify(s.extractAuth(w, r)) {
 		http.Redirect(w, r, "/mailbox", http.StatusTemporaryRedirect)
 		return
 	}
 
-	s.Logout(w, r)
+	//Otherwise make sure user logged out and show login page
+	s.logout(w, r)
 	fmt.Fprint(w, s.templater.ExecuteLogin(&LoginTemplateData{
 		common.Version,
 	}))
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
-	s.Logout(w, r)
+	s.logout(w, r)
 	http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
 }
 
 func (s *Server) handleMessageDetails(w http.ResponseWriter, r *http.Request) {
 	//TODO: Not implemented yet. Need database mail storage implemented first
+	user, token := s.extractAuth(w, r)
+	if !s.authenticator.Verify(user, token) {
+		fmt.Fprint(w, "")
+		return
+	}
 	fmt.Fprint(w, s.templater.ExecuteDetails(""))
+}
+
+func (s *Server) handleStatusLine(w http.ResponseWriter, r *http.Request) {
+	//TODO: Not implemented yet. Need database mail storage implemented first
+	user, token := s.extractAuth(w, r)
+	if !s.authenticator.Verify(user, token) {
+		fmt.Fprint(w, "")
+		return
+	}
+
+	fmt.Fprint(w, s.templater.ExecuteStatusLine(&StatusLineTemplateData{
+		Name:   "No name", //TODO: read from database
+		Read:   0,         //TODO: read from database
+		Unread: 0,         //TODO: read from database
+	}))
 }
 
 func (s *Server) handleMailbox(w http.ResponseWriter, r *http.Request) {
 	user, token := s.extractAuth(w, r)
 	if !s.authenticator.Verify(user, token) {
-		s.Logout(w, r)
+		s.logout(w, r)
 		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
 	}
 
 	mailPath := config.ConfigInstance().VMailboxBase + "/" + s.authenticator.MailPath(user)
 	if !utils.FileExists(mailPath) {
-		s.Logout(w, r)
-		s.Error(http.StatusInternalServerError, "Unable to access your mailbox. Please contact Administrator.", w, r)
+		s.logout(w, r)
+		s.error(http.StatusInternalServerError, "Unable to access your mailbox. Please contact Administrator.", w, r)
 		return
 	}
 
 	file, err := utils.OpenAndLockWait(mailPath)
 	if err != nil {
-		s.Logout(w, r)
-		s.Error(http.StatusInternalServerError, "Unable to access your mailbox. Please contact Administrator.", w, r)
+		s.logout(w, r)
+		s.error(http.StatusInternalServerError, "Unable to access your mailbox. Please contact Administrator.", w, r)
 		return
 	}
 	defer file.CloseAndUnlock()
@@ -279,7 +304,7 @@ func (s *Server) handleMailbox(w http.ResponseWriter, r *http.Request) {
 	}))
 }
 
-func (s *Server) Logout(w http.ResponseWriter, r *http.Request) {
+func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("logout")
 
 	session, _ := s.sessionStore.Get(r, CookieSessionToken)
@@ -288,7 +313,7 @@ func (s *Server) Logout(w http.ResponseWriter, r *http.Request) {
 	session.Save(r, w)
 }
 
-func (s *Server) Login(user, token string, w http.ResponseWriter, r *http.Request) {
+func (s *Server) login(user, token string, w http.ResponseWriter, r *http.Request) {
 	session, _ := s.sessionStore.Get(r, CookieSessionToken)
 	session.Values["user"] = user
 	session.Values["token"] = token
@@ -296,7 +321,7 @@ func (s *Server) Login(user, token string, w http.ResponseWriter, r *http.Reques
 	http.Redirect(w, r, "/mailbox", http.StatusTemporaryRedirect)
 }
 
-func (s *Server) Error(code int, text string, w http.ResponseWriter, r *http.Request) {
+func (s *Server) error(code int, text string, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusInternalServerError)
 	fmt.Fprint(w, s.templater.ExecuteError(&ErrorTemplateData{
 		Code: code,
