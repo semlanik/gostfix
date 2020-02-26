@@ -32,8 +32,8 @@ import (
 	"os"
 	"strings"
 
-	config "../config"
-	utils "../utils"
+	config "git.semlanik.org/semlanik/gostfix/config"
+	utils "git.semlanik.org/semlanik/gostfix/utils"
 	fsnotify "github.com/fsnotify/fsnotify"
 )
 

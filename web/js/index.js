@@ -49,6 +49,7 @@ function requestDetails() {
                 data: {detailsUrl: messageId},
                 success: function(result) {
                     $("#details").html(result);
+                    $("#maillist").css({pointerEvents: "none"})
                     $("#details").show()
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
@@ -58,6 +59,7 @@ function requestDetails() {
         }
     } else {
         $("#details").hide()
+        $("#maillist").css({pointerEvents: "auto"})
     }
 }
 

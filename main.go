@@ -26,8 +26,8 @@
 package main
 
 import (
-	scanner "./scanner"
-	web "./web"
+	scanner "git.semlanik.org/semlanik/gostfix/scanner"
+	web "git.semlanik.org/semlanik/gostfix/web"
 )
 
 type GofixEngine struct {

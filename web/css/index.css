@@ -26,13 +26,17 @@ table {
 
     margin-left: 150pt!important;
     margin-top: 5pt!important;
-    margin-right: 5pt!important;
+    margin-right: 15pt!important;
 
     padding: 5pt
 }
 
 .emailDetails {
     background-color: white;
+    margin-left: 158pt!important;
+    margin-top: 13pt!important;
+    margin-bottom: -8pt!important;
+    margin-right: 8pt!important;
 }
 
 .foldersBox {
@@ -42,7 +46,7 @@ table {
     right: 0;
     bottom: 0;
 
-    margin-left: 5pt!important;
+    margin-left: 2pt!important;
     margin-top: 5pt!important;
     margin-right: 5pt!important;
     margin-bottom: 30pt!important;

@@ -30,7 +30,7 @@ import (
 	"strings"
 	"sync"
 
-	utils "../utils"
+	utils "git.semlanik.org/semlanik/gostfix/utils"
 	ini "gopkg.in/go-ini/ini.v1"
 )
 

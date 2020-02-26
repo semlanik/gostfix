@@ -33,10 +33,10 @@ import (
 	"net/http"
 	"strings"
 
-	auth "../auth"
-	common "../common"
-	config "../config"
-	utils "../utils"
+	auth "git.semlanik.org/semlanik/gostfix/auth"
+	common "git.semlanik.org/semlanik/gostfix/common"
+	config "git.semlanik.org/semlanik/gostfix/config"
+	utils "git.semlanik.org/semlanik/gostfix/utils"
 	"github.com/gorilla/sessions"
 )
 
