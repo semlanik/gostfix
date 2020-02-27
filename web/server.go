@@ -61,9 +61,7 @@ const (
 func NewEmail() *common.Mail {
 	return &common.Mail{
 		Header: &common.MailHeader{},
-		Body: &common.MailBody{
-			ContentType: "plain/text",
-		},
+		Body:   &common.MailBody{},
 	}
 }
 
@@ -130,9 +128,9 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	//Otherwise make sure user logged out and show login page
 	s.logout(w, r)
-	fmt.Fprint(w, s.templater.ExecuteLogin(&LoginTemplateData{
-		common.Version,
-	}))
+	fmt.Fprint(w, s.templater.ExecuteLogin(&struct {
+		Version string
+	}{common.Version}))
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -158,7 +156,11 @@ func (s *Server) handleStatusLine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprint(w, s.templater.ExecuteStatusLine(&StatusLineTemplateData{
+	fmt.Fprint(w, s.templater.ExecuteStatusLine(&struct {
+		Name   string
+		Read   int
+		Unread int
+	}{
 		Name:   "No name", //TODO: read from database
 		Read:   0,         //TODO: read from database
 		Unread: 0,         //TODO: read from database
@@ -194,17 +196,18 @@ func (s *Server) handleMailbox(w http.ResponseWriter, r *http.Request) {
 	mandatoryHeaders := 0
 	email := NewEmail()
 	state := StateHeaderScan
+	contentType := "plain/text"
 	for scanner.Scan() {
 		if scanner.Text() == "" {
 			if state == StateHeaderScan && mandatoryHeaders&AtLeastOneHeaderMask == AtLeastOneHeaderMask {
-				boundaryCapture := utils.RegExpUtilsInstance().BoundaryFinder.FindStringSubmatch(email.Body.ContentType)
+				boundaryCapture := utils.RegExpUtilsInstance().BoundaryFinder.FindStringSubmatch(contentType)
 				if len(boundaryCapture) == 2 {
 					activeBoundary = boundaryCapture[1]
 				} else {
 					activeBoundary = ""
 				}
 				state = StateBodyScan
-				// fmt.Printf("--------------------------Start body scan content type:%s boundary: %s -------------------------\n", email.Body.ContentType, activeBoundary)
+				// fmt.Printf("--------------------------Start body scan content type:%s boundary: %s -------------------------\n", contentType, activeBoundary)
 			} else if state == StateBodyScan {
 				// fmt.Printf("--------------------------Previous email-------------------------\n%v\n", email)
 				if activeBoundary == "" {
@@ -215,6 +218,7 @@ func (s *Server) handleMailbox(w http.ResponseWriter, r *http.Request) {
 						emails = append(emails, email)
 					}
 					email = NewEmail()
+					contentType = "plain/text"
 					state = StateHeaderScan
 					mandatoryHeaders = 0
 				} else {
@@ -250,7 +254,7 @@ func (s *Server) handleMailbox(w http.ResponseWriter, r *http.Request) {
 					previousHeader = &email.Header.Date
 					mandatoryHeaders |= DateHeaderMask
 				case "content-type":
-					previousHeader = &email.Body.ContentType
+					previousHeader = &contentType
 				default:
 					previousHeader = nil
 				}
@@ -297,7 +301,11 @@ func (s *Server) handleMailbox(w http.ResponseWriter, r *http.Request) {
 		state = StateHeaderScan
 	}
 
-	fmt.Fprint(w, s.templater.ExecuteIndex(&IndexTemplateData{
+	fmt.Fprint(w, s.templater.ExecuteIndex(&struct {
+		Folders  template.HTML
+		MailList template.HTML
+		Version  template.HTML
+	}{
 		MailList: template.HTML(s.templater.ExecuteMailList(emails)),
 		Folders:  "Folders",
 		Version:  common.Version,
@@ -323,9 +331,14 @@ func (s *Server) login(user, token string, w http.ResponseWriter, r *http.Reques
 
 func (s *Server) error(code int, text string, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, s.templater.ExecuteError(&ErrorTemplateData{
-		Code: code,
-		Text: "Unable to access your mailbox. Please contact Administrator.",
+	fmt.Fprint(w, s.templater.ExecuteError(&struct {
+		Code    int
+		Text    string
+		Version string
+	}{
+		Code:    code,
+		Text:    "Unable to access your mailbox. Please contact Administrator.",
+		Version: common.Version,
 	}))
 }
 

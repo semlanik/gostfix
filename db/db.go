@@ -24,3 +24,111 @@
  */
 
 package db
+
+import (
+	"context"
+	"time"
+
+	common "git.semlanik.org/semlanik/gostfix/common"
+	bcrypt "golang.org/x/crypto/bcrypt"
+
+	bson "go.mongodb.org/mongo-driver/bson"
+	mongo "go.mongodb.org/mongo-driver/mongo"
+	options "go.mongodb.org/mongo-driver/mongo/options"
+
+	config "git.semlanik.org/semlanik/gostfix/config"
+)
+
+type Storage struct {
+	usersCollection  *mongo.Collection
+	tokensCollection *mongo.Collection
+}
+
+func NewStorage() (s *Storage, err error) {
+	fullUrl := "mongodb://"
+	if config.ConfigInstance().MongoUser != "" {
+		fullUrl += config.ConfigInstance().MongoUser
+		if config.ConfigInstance().MongoPassword != "" {
+			fullUrl += ":" + config.ConfigInstance().MongoPassword
+		}
+		fullUrl += "@"
+	}
+
+	fullUrl += config.ConfigInstance().MongoAddress
+
+	client, err := mongo.NewClient(options.Client().ApplyURI(fullUrl))
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	err = client.Connect(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	s = &Storage{
+		usersCollection:  client.Database("gostfix").Collection("users"),
+		tokensCollection: client.Database("gostfix").Collection("tokens"),
+	}
+	return
+}
+
+func (s *Storage) AddUser(user, password, fullName string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	hashString := string(hash)
+	userInfo := bson.M{
+		"user":     user,
+		"password": hashString,
+		"fullName": fullName,
+	}
+	_, err = s.usersCollection.InsertOne(context.Background(), userInfo)
+	return err
+}
+
+func (s *Storage) CheckUser(user, password string) error {
+	result := struct {
+		User     string
+		Password string
+	}{}
+	err := s.usersCollection.FindOne(context.Background(), bson.M{"user": user}).Decode(&result)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Storage) AddToken(user, token string) error {
+	return nil
+}
+
+func (s *Storage) CheckToken(user, token string) error {
+	return nil
+}
+
+func (s *Storage) SaveMail(user string, m *common.Mail) error {
+	return nil
+}
+
+func (s *Storage) RemoveMail(user string, m *common.Mail) error {
+	return nil
+}
+
+func (s *Storage) MailList(user string) ([]*common.MailHeader, error) {
+	return nil, nil
+}
+
+func (s *Storage) GetMail(user string, header *common.MailHeader) (m *common.Mail, err error) {
+	return nil, nil
+}
+
+func (s *Storage) GetAttachment(user string, attachmentId string) (filePath string, err error) {
+	return "", nil
+}

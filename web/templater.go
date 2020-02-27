@@ -50,28 +50,6 @@ type Templater struct {
 	statusLineTemplate *template.Template
 }
 
-type IndexTemplateData struct {
-	Folders  template.HTML
-	MailList template.HTML
-	Version  template.HTML
-}
-
-type ErrorTemplateData struct {
-	Code    int
-	Text    string
-	Version string
-}
-
-type LoginTemplateData struct {
-	Version string
-}
-
-type StatusLineTemplateData struct {
-	Name   string
-	Read   int
-	Unread int
-}
-
 func NewTemplater(templatesPath string) (t *Templater) {
 	t = nil
 	index, err := parseTemplate(templatesPath + "/" + IndexTemplateName)

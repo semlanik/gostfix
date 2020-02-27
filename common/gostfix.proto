@@ -3,8 +3,9 @@ syntax = "proto3";
 package common;
 
 message MailBody {
-    string contentType = 1;
-    bytes content = 2;
+	string plainText = 1;
+	string richText = 2;
+	repeated AttachmentHeader attachments = 3;
 }
 
 message MailHeader {
@@ -19,4 +20,14 @@ message MailHeader {
 message Mail {
     MailHeader header = 1;
     MailBody body = 2;
+}
+
+message Attachment {
+	AttachmentHeader header = 1;
+	bytes data = 2;
+}
+
+message AttachmentHeader {
+	string fileName = 1;
+	string contentType = 2;
 }
