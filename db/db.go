@@ -27,6 +27,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	common "git.semlanik.org/semlanik/gostfix/common"
@@ -42,6 +43,7 @@ import (
 type Storage struct {
 	usersCollection  *mongo.Collection
 	tokensCollection *mongo.Collection
+	emailsCollection *mongo.Collection
 }
 
 func NewStorage() (s *Storage, err error) {
@@ -69,10 +71,25 @@ func NewStorage() (s *Storage, err error) {
 		return nil, err
 	}
 
-	s = &Storage{
-		usersCollection:  client.Database("gostfix").Collection("users"),
-		tokensCollection: client.Database("gostfix").Collection("tokens"),
+	db := client.Database("gostfix")
+
+	index := mongo.IndexModel{
+		Keys: bson.M{
+			"user": 1,
+		},
+		Options: options.Index().SetUnique(true),
 	}
+
+	s = &Storage{
+		usersCollection:  db.Collection("users"),
+		tokensCollection: db.Collection("tokens"),
+		emailsCollection: db.Collection("emails"),
+	}
+
+	//Initial database setup
+	s.usersCollection.Indexes().CreateOne(context.Background(), index)
+	s.tokensCollection.Indexes().CreateOne(context.Background(), index)
+	s.emailsCollection.Indexes().CreateOne(context.Background(), index)
 	return
 }
 
@@ -89,6 +106,49 @@ func (s *Storage) AddUser(user, password, fullName string) error {
 		"fullName": fullName,
 	}
 	_, err = s.usersCollection.InsertOne(context.Background(), userInfo)
+	if err != nil {
+		return err
+	}
+
+	err = s.addEmail(user, user, true)
+	if err != nil {
+		s.usersCollection.DeleteOne(context.Background(), bson.M{"user": user})
+		return err
+	}
+
+	//TODO: Update postfix virtual map here
+	return nil
+}
+
+func (s *Storage) AddEmail(user string, email string) error {
+	return s.addEmail(user, email, false)
+}
+
+func (s *Storage) addEmail(user string, email string, upsert bool) error {
+	result := struct {
+		User string
+	}{}
+	err := s.usersCollection.FindOne(context.Background(), bson.M{"user": user}).Decode(&result)
+
+	if err != nil {
+		return err
+	}
+	_, err = s.emailsCollection.UpdateOne(context.Background(),
+		bson.M{"user": user},
+		bson.M{"$addToSet": bson.M{"email": email}},
+		options.Update().SetUpsert(upsert))
+
+	//TODO: Update postfix virtual map here
+	return err
+}
+
+func (s *Storage) RemoveEmail(user string, email string) error {
+
+	_, err := s.emailsCollection.UpdateOne(context.Background(),
+		bson.M{"user": user},
+		bson.M{"$pull": bson.M{"email": email}})
+
+	//TODO: Update postfix virtual map here
 	return err
 }
 
@@ -99,9 +159,12 @@ func (s *Storage) CheckUser(user, password string) error {
 	}{}
 	err := s.usersCollection.FindOne(context.Background(), bson.M{"user": user}).Decode(&result)
 	if err != nil {
-		return err
+		return errors.New("Invalid user or password")
 	}
 
+	if bcrypt.CompareHashAndPassword([]byte(password), []byte(result.Password)) != nil {
+		return errors.New("Invalid user or password")
+	}
 	return nil
 }
 
@@ -131,4 +194,16 @@ func (s *Storage) GetMail(user string, header *common.MailHeader) (m *common.Mai
 
 func (s *Storage) GetAttachment(user string, attachmentId string) (filePath string, err error) {
 	return "", nil
+}
+
+func (s *Storage) GetUsers() (users []string, err error) {
+	return nil, nil
+}
+
+func (s *Storage) GetEmails(user []string) (emails []string, err error) {
+	return nil, nil
+}
+
+func (s *Storage) GetAllEmails() (emails []string, err error) {
+	return nil, nil
 }

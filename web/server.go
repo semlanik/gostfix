@@ -36,8 +36,10 @@ import (
 	auth "git.semlanik.org/semlanik/gostfix/auth"
 	common "git.semlanik.org/semlanik/gostfix/common"
 	config "git.semlanik.org/semlanik/gostfix/config"
+	db "git.semlanik.org/semlanik/gostfix/db"
 	utils "git.semlanik.org/semlanik/gostfix/utils"
-	"github.com/gorilla/sessions"
+
+	sessions "github.com/gorilla/sessions"
 )
 
 const (
@@ -70,15 +72,33 @@ type Server struct {
 	fileServer    http.Handler
 	templater     *Templater
 	sessionStore  *sessions.CookieStore
+	storage       *db.Storage
 }
 
 func NewServer() *Server {
-	return &Server{
+
+	storage, err := db.NewStorage()
+
+	if err != nil {
+		log.Fatalf("Unable to intialize mail storage %s", err)
+		return nil
+	}
+
+	s := &Server{
 		authenticator: auth.NewAuthenticator(),
 		templater:     NewTemplater("data/templates"),
 		fileServer:    http.FileServer(http.Dir("data")),
 		sessionStore:  sessions.NewCookieStore(make([]byte, 32)),
+		storage:       storage,
 	}
+
+	s.storage.AddUser("semlanik@semlanik.org", "testpassword", "Alexey Edelev")
+	s.storage.AddUser("junkmail@semlanik.org", "testpassword", "Alexey Edelev")
+	err = s.storage.AddEmail("semlanik@semlanik.org", "ci@semlanik.org")
+	err = s.storage.AddEmail("semlanik@semlanik.org", "shopping@semlanik.org")
+	err = s.storage.AddEmail("semlanik@semlanik.org", "junkmail@semlanik.org")
+	err = s.storage.AddEmail("junkmail@semlanik.org", "qqqqq@semlanik.org")
+	return s
 }
 
 func (s *Server) Run() {
