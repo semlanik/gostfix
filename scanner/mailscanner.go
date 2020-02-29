@@ -32,45 +32,78 @@ import (
 	"os"
 	"strings"
 
+	"git.semlanik.org/semlanik/gostfix/common"
 	config "git.semlanik.org/semlanik/gostfix/config"
+	db "git.semlanik.org/semlanik/gostfix/db"
 	utils "git.semlanik.org/semlanik/gostfix/utils"
 	fsnotify "github.com/fsnotify/fsnotify"
 )
 
+func NewEmail() *common.Mail {
+	return &common.Mail{
+		Header: &common.MailHeader{},
+		Body:   &common.MailBody{},
+	}
+}
+
 type MailScanner struct {
-	watcher  *fsnotify.Watcher
-	mailMaps map[string]string
+	watcher   *fsnotify.Watcher
+	emailMaps map[string]string
+	storage   *db.Storage
 }
 
 func NewMailScanner() (ms *MailScanner) {
-	mailPath := config.ConfigInstance().VMailboxBase
-	fmt.Printf("Add mail folder %s for watching\n", mailPath)
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
+		return
+	}
+
+	storage, err := db.NewStorage()
+
+	if err != nil {
+		log.Fatal(err)
+		return
 	}
 
 	ms = &MailScanner{
-		watcher:  watcher,
-		mailMaps: readMailMaps(),
-	}
-
-	for _, f := range ms.mailMaps {
-		fullPath := mailPath + "/" + f
-		if utils.FileExists(fullPath) {
-			fmt.Printf("Add mail file %s for watching\n", fullPath)
-			watcher.Add(fullPath)
-		}
+		watcher: watcher,
+		storage: storage,
 	}
 
 	return
 }
 
-func readMailMaps() map[string]string {
-	mailMaps := make(map[string]string)
+func (ms *MailScanner) checkEmailRegistred(email string) bool {
+	emails, err := ms.storage.GetAllEmails()
+
+	if err != nil {
+		return false
+	}
+
+	for _, e := range emails {
+		if email == e {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (ms *MailScanner) readEmailMaps() {
+	registredEmails, err := ms.storage.GetAllEmails()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	mailPath := config.ConfigInstance().VMailboxBase
+
+	emailMaps := make(map[string]string)
 	mapsFile := config.ConfigInstance().VMailboxMaps
 	if !utils.FileExists(mapsFile) {
-		return mailMaps
+		log.Fatal("Could not read virtual mailbox maps")
+		return
 	}
 
 	file, err := os.Open(mapsFile)
@@ -81,19 +114,62 @@ func readMailMaps() map[string]string {
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
-		mailPathPair := strings.Split(scanner.Text(), " ")
-		if len(mailPathPair) != 2 {
-			log.Printf("Invalid record in virtual mailbox maps %s", scanner.Text())
+		emailMapPair := strings.Split(scanner.Text(), " ")
+		if len(emailMapPair) != 2 {
+			log.Printf("Invalid record in virtual mailbox maps %s\n", scanner.Text())
 			continue
 		}
-		mailMaps[mailPathPair[0]] = mailPathPair[1]
+
+		found := false
+		email := emailMapPair[0]
+		for _, registredEmail := range registredEmails {
+			if email == registredEmail {
+				found = true
+			}
+		}
+		if !found {
+			log.Fatalf("Found non-registred mailbox <%s> in mail maps. Database has inconsistancy.\n", email)
+			return
+		}
+		emailMaps[email] = mailPath + "/" + emailMapPair[1]
 	}
 
-	return mailMaps
+	for _, registredEmail := range registredEmails {
+		if _, exists := emailMaps[registredEmail]; !exists {
+			log.Fatalf("Found existing mailbox <%s> in database. Mail maps has inconsistancy.\n", registredEmail)
+		}
+	}
+	ms.emailMaps = emailMaps
 }
 
 func (ms *MailScanner) Run() {
 	go func() {
+		ms.readEmailMaps()
+
+		for mailbox, mailPath := range ms.emailMaps {
+			if !utils.FileExists(mailPath) {
+				file, err := os.Create(mailPath)
+				if err != nil {
+					fmt.Printf("Unable to create mailbox for watching %s\n", err)
+					continue
+				}
+				file.Close()
+			}
+
+			mails := ms.readMailFile(mailPath)
+			for _, mail := range mails {
+				ms.storage.SaveMail(mailbox, "Inbox", mail)
+			}
+			log.Printf("New email for %s, emails read %d", mailPath, len(mails))
+
+			err := ms.watcher.Add(mailPath)
+			if err != nil {
+				fmt.Printf("Unable to add mailbox for watching\n")
+			} else {
+				fmt.Printf("Add mail file %s for watching\n", mailPath)
+			}
+		}
+
 		for {
 			select {
 			case event, ok := <-ms.watcher.Events:
@@ -101,7 +177,23 @@ func (ms *MailScanner) Run() {
 					return
 				}
 				if event.Op&fsnotify.Write == fsnotify.Write {
-					log.Println("New email for", event.Name)
+					mailPath := event.Name
+					mailbox := ""
+					for k, v := range ms.emailMaps {
+						if v == mailPath {
+							mailbox = k
+						}
+					}
+
+					if mailbox != "" {
+						mails := ms.readMailFile(mailPath)
+						for _, mail := range mails {
+							ms.storage.SaveMail(mailbox, "Inbox", mail)
+						}
+						log.Printf("New email for %s, emails read %d", mailPath, len(mails))
+					} else {
+						log.Printf("Invalid path update triggered: %s", mailPath)
+					}
 				}
 			case err, ok := <-ms.watcher.Errors:
 				if !ok {
@@ -115,4 +207,23 @@ func (ms *MailScanner) Run() {
 
 func (ms *MailScanner) Stop() {
 	defer ms.watcher.Close()
+}
+
+func (ms *MailScanner) readMailFile(mailPath string) (mails []*common.Mail) {
+	if !utils.FileExists(mailPath) {
+		return nil
+	}
+
+	file, err := utils.OpenAndLockWait(mailPath)
+	if err != nil {
+		return nil
+	}
+	defer file.CloseAndUnlock()
+
+	mails = parseFile(file)
+	if len(mails) > 0 {
+		file.Truncate(0)
+	}
+
+	return mails
 }

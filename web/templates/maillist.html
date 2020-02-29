@@ -3,13 +3,13 @@
         <table class="mailList" >
             <tbody>
                 {{range .}}
-                <tr onclick="openEmail('someid');">
-                    <td class="fromCol">{{.Header.From}}</td>
-                    <td class="subjCol">{{.Header.Subject}}</td>
-                    <td class="dateCol">{{.Header.Date}}</td>
+                <tr id="mail{{.Id}}" class="{{if .Read}}read{{else}}unread{{end}}" onclick="openEmail('{{.Id}}');">
+                    <td class="fromCol">{{.Mail.Header.From}}</td>
+                    <td class="subjCol">{{.Mail.Header.Subject}}</td>
+                    <td class="dateCol">{{.Mail.Header.Date}}</td>
                 </tr>
                 {{else}}
-                <tr><td><b>Mail folder is empty</b></td>></tr>
+                <tr><td><b>Mail folder is empty</b></td></tr>
                 {{end}}
             </tbody>
         </table>

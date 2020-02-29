@@ -27,7 +27,10 @@ package db
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/hex"
 	"errors"
+	"log"
 	"time"
 
 	common "git.semlanik.org/semlanik/gostfix/common"
@@ -41,9 +44,17 @@ import (
 )
 
 type Storage struct {
-	usersCollection  *mongo.Collection
-	tokensCollection *mongo.Collection
-	emailsCollection *mongo.Collection
+	db                  *mongo.Database
+	usersCollection     *mongo.Collection
+	tokensCollection    *mongo.Collection
+	emailsCollection    *mongo.Collection
+	allEmailsCollection *mongo.Collection
+	mailsCollection     *mongo.Collection
+}
+
+func qualifiedMailCollection(user string) string {
+	sum := sha1.Sum([]byte(user))
+	return "mb" + hex.EncodeToString(sum[:])
 }
 
 func NewStorage() (s *Storage, err error) {
@@ -81,15 +92,19 @@ func NewStorage() (s *Storage, err error) {
 	}
 
 	s = &Storage{
-		usersCollection:  db.Collection("users"),
-		tokensCollection: db.Collection("tokens"),
-		emailsCollection: db.Collection("emails"),
+		db:                  db,
+		usersCollection:     db.Collection("users"),
+		tokensCollection:    db.Collection("tokens"),
+		emailsCollection:    db.Collection("emails"),
+		allEmailsCollection: db.Collection("allEmails"),
+		mailsCollection:     db.Collection("mails"),
 	}
 
 	//Initial database setup
 	s.usersCollection.Indexes().CreateOne(context.Background(), index)
 	s.tokensCollection.Indexes().CreateOne(context.Background(), index)
 	s.emailsCollection.Indexes().CreateOne(context.Background(), index)
+
 	return
 }
 
@@ -133,6 +148,19 @@ func (s *Storage) addEmail(user string, email string, upsert bool) error {
 	if err != nil {
 		return err
 	}
+
+	emails, err := s.GetAllEmails()
+
+	if err != nil {
+		return err
+	}
+
+	for _, existingEmail := range emails {
+		if existingEmail == email {
+			return errors.New("Email exists")
+		}
+	}
+
 	_, err = s.emailsCollection.UpdateOne(context.Background(),
 		bson.M{"user": user},
 		bson.M{"$addToSet": bson.M{"email": email}},
@@ -153,6 +181,7 @@ func (s *Storage) RemoveEmail(user string, email string) error {
 }
 
 func (s *Storage) CheckUser(user, password string) error {
+	log.Printf("Check user: %s %s", user, password)
 	result := struct {
 		User     string
 		Password string
@@ -162,21 +191,85 @@ func (s *Storage) CheckUser(user, password string) error {
 		return errors.New("Invalid user or password")
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(password), []byte(result.Password)) != nil {
+	if bcrypt.CompareHashAndPassword([]byte(result.Password), []byte(password)) != nil {
 		return errors.New("Invalid user or password")
 	}
 	return nil
 }
 
 func (s *Storage) AddToken(user, token string) error {
+	log.Printf("add token: %s, %s", user, token)
+	s.tokensCollection.UpdateOne(context.Background(),
+		bson.M{"user": user},
+		bson.M{
+			"$addToSet": bson.M{
+				"token": bson.M{
+					"token":  token,
+					"expire": time.Now().Add(time.Hour * 96).Unix(),
+				},
+			},
+		},
+		options.Update().SetUpsert(true))
 	return nil
 }
 
 func (s *Storage) CheckToken(user, token string) error {
-	return nil
+	log.Printf("Check token: %s %s", user, token)
+	if token == "" {
+		return errors.New("Invalid token")
+	}
+
+	cur, err := s.tokensCollection.Aggregate(context.Background(),
+		bson.A{
+			bson.M{"$match": bson.M{"user": user}},
+			bson.M{"$unwind": "$token"},
+			bson.M{"$match": bson.M{"token.token": token}},
+			bson.M{"$project": bson.M{"_id": 0, "token.expire": 1}},
+		})
+
+	if err != nil {
+		log.Fatalln(err)
+		return err
+	}
+
+	defer cur.Close(context.Background())
+	if cur.Next(context.Background()) {
+		result := struct {
+			Token struct {
+				Expire int64
+			}
+		}{}
+
+		err = cur.Decode(&result)
+
+		if err == nil && result.Token.Expire >= time.Now().Unix() {
+			log.Printf("Check token %s expire: %d", user, result.Token.Expire)
+			return nil
+		}
+	}
+
+	return errors.New("Token expired")
 }
 
-func (s *Storage) SaveMail(user string, m *common.Mail) error {
+func (s *Storage) SaveMail(email, folder string, m *common.Mail) error {
+	result := &struct {
+		User string
+	}{}
+
+	s.emailsCollection.FindOne(context.Background(), bson.M{"email": email}).Decode(result)
+
+	mailsCollection := s.db.Collection(qualifiedMailCollection(result.User))
+	mailsCollection.InsertOne(context.Background(), &struct {
+		Email  string
+		Mail   *common.Mail
+		Folder string
+		Read   bool
+	}{
+		Email:  email,
+		Mail:   m,
+		Folder: folder,
+		Read:   false,
+	}, options.InsertOne().SetBypassDocumentValidation(true))
 	return nil
 }
 
@@ -184,8 +277,28 @@ func (s *Storage) RemoveMail(user string, m *common.Mail) error {
 	return nil
 }
 
-func (s *Storage) MailList(user string) ([]*common.MailHeader, error) {
-	return nil, nil
+func (s *Storage) MailList(user, email, folder string) ([]*common.MailMetadata, error) {
+	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
+	cur, err := mailsCollection.Find(context.Background(), bson.M{"email": email})
+
+	if err != nil {
+		return nil, err
+	}
+
+	var headers []*common.MailMetadata
+	for cur.Next(context.Background()) {
+		result := &common.MailMetadata{}
+		err = cur.Decode(result)
+		if err != nil {
+			log.Printf("Unable to read database mail record: %s", err)
+			continue
+		}
+		log.Printf("Add message: %s", result.Id)
+		headers = append(headers, result)
+	}
+
+	log.Printf("Mails read from database: %v", headers)
+	return headers, nil
 }
 
 func (s *Storage) GetMail(user string, header *common.MailHeader) (m *common.Mail, err error) {
@@ -205,5 +318,15 @@ func (s *Storage) GetEmails(user []string) (emails []string, err error) {
 }
 
 func (s *Storage) GetAllEmails() (emails []string, err error) {
-	return nil, nil
+	cur, err := s.allEmailsCollection.Find(context.Background(), bson.M{})
+	if cur.Next(context.Background()) {
+		result := struct {
+			Emails []string
+		}{}
+		err = cur.Decode(&result)
+		if err == nil {
+			return result.Emails, nil
+		}
+	}
+	return nil, err
 }

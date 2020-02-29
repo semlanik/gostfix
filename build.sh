@@ -1,12 +1,15 @@
 export PATH=$PATH:$PWD/bin
 export GOBIN=$PWD/bin
-export RPC_PATH=$PWD/common
+export RPC_PATH=common
 
 go get -u github.com/golang/protobuf/protoc-gen-go@v1.3.4
+go get -u github.com/amsokol/protoc-gen-gotag
 
 # mkdir -p $RPC_PATH
 rm -f $RPC_PATH/*.pb.go
 protoc -I$RPC_PATH --go_out=plugins=grpc:$RPC_PATH $RPC_PATH/gostfix.proto
+
+protoc -I$RPC_PATH --gotag_out=xxx="bson+\"-\"",output_path=$RPC_PATH:. $RPC_PATH/gostfix.proto 
 
 echo "Installing data"
 rm -rf data

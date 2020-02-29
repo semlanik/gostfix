@@ -24,9 +24,9 @@ type MailBody struct {
 	PlainText            string              `protobuf:"bytes,1,opt,name=plainText,proto3" json:"plainText,omitempty"`
 	RichText             string              `protobuf:"bytes,2,opt,name=richText,proto3" json:"richText,omitempty"`
 	Attachments          []*AttachmentHeader `protobuf:"bytes,3,rep,name=attachments,proto3" json:"attachments,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
-	XXX_unrecognized     []byte              `json:"-"`
-	XXX_sizecache        int32               `json:"-"`
+	XXX_NoUnkeyedLiteral struct{}            `json:"-" bson:"-"`
+	XXX_unrecognized     []byte              `json:"-" bson:"-"`
+	XXX_sizecache        int32               `json:"-" bson:"-"`
 }
 
 func (m *MailBody) Reset()         { *m = MailBody{} }
@@ -82,9 +82,9 @@ type MailHeader struct {
 	Bcc                  string   `protobuf:"bytes,4,opt,name=bcc,proto3" json:"bcc,omitempty"`
 	Date                 string   `protobuf:"bytes,5,opt,name=date,proto3" json:"date,omitempty"`
 	Subject              string   `protobuf:"bytes,6,opt,name=subject,proto3" json:"subject,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-" bson:"-"`
+	XXX_unrecognized     []byte   `json:"-" bson:"-"`
+	XXX_sizecache        int32    `json:"-" bson:"-"`
 }
 
 func (m *MailHeader) Reset()         { *m = MailHeader{} }
@@ -157,9 +157,9 @@ func (m *MailHeader) GetSubject() string {
 type Mail struct {
 	Header               *MailHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	Body                 *MailBody   `protobuf:"bytes,2,opt,name=body,proto3" json:"body,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
+	XXX_NoUnkeyedLiteral struct{}    `json:"-" bson:"-"`
+	XXX_unrecognized     []byte      `json:"-" bson:"-"`
+	XXX_sizecache        int32       `json:"-" bson:"-"`
 }
 
 func (m *Mail) Reset()         { *m = Mail{} }
@@ -204,9 +204,9 @@ func (m *Mail) GetBody() *MailBody {
 type Attachment struct {
 	Header               *AttachmentHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	Data                 []byte            `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
-	XXX_unrecognized     []byte            `json:"-"`
-	XXX_sizecache        int32             `json:"-"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-" bson:"-"`
+	XXX_unrecognized     []byte            `json:"-" bson:"-"`
+	XXX_sizecache        int32             `json:"-" bson:"-"`
 }
 
 func (m *Attachment) Reset()         { *m = Attachment{} }
@@ -251,9 +251,9 @@ func (m *Attachment) GetData() []byte {
 type AttachmentHeader struct {
 	FileName             string   `protobuf:"bytes,1,opt,name=fileName,proto3" json:"fileName,omitempty"`
 	ContentType          string   `protobuf:"bytes,2,opt,name=contentType,proto3" json:"contentType,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-" bson:"-"`
+	XXX_unrecognized     []byte   `json:"-" bson:"-"`
+	XXX_sizecache        int32    `json:"-" bson:"-"`
 }
 
 func (m *AttachmentHeader) Reset()         { *m = AttachmentHeader{} }

@@ -32,16 +32,27 @@ import (
 	"strings"
 
 	config "git.semlanik.org/semlanik/gostfix/config"
+	db "git.semlanik.org/semlanik/gostfix/db"
 	utils "git.semlanik.org/semlanik/gostfix/utils"
+	uuid "github.com/google/uuid"
 )
 
 type Authenticator struct {
+	storage  *db.Storage
 	mailMaps map[string]string //TODO: temporary here. Later should be part of mailscanner and never accessed from here
 }
 
 func NewAuthenticator() (a *Authenticator) {
+	storage, err := db.NewStorage()
+
+	if err != nil {
+		log.Fatalf("Unable to intialize user storage %s", err)
+		return nil
+	}
+
 	a = &Authenticator{
 		mailMaps: readMailMaps(), //TODO: temporary here. Later should be part of mailscanner and never accessed from here
+		storage:  storage,
 	}
 	return
 }
@@ -50,18 +61,22 @@ func (a *Authenticator) Authenticate(user, password string) (string, bool) {
 	if !utils.RegExpUtilsInstance().EmailChecker.MatchString(user) {
 		return "", false
 	}
-	_, ok := a.mailMaps[user]
 
-	return "", ok
+	if a.storage.CheckUser(user, password) != nil {
+		return "", false
+	}
+
+	token := uuid.New().String()
+	a.storage.AddToken(user, token)
+	return token, true
 }
 
 func (a *Authenticator) Verify(user, token string) bool {
 	if !utils.RegExpUtilsInstance().EmailChecker.MatchString(user) {
 		return false
 	}
-	_, ok := a.mailMaps[user]
 
-	return ok
+	return a.storage.CheckToken(user, token) == nil
 }
 
 func (a *Authenticator) MailPath(user string) string { //TODO: temporary here. Later should be part of mailscanner and never accessed from here

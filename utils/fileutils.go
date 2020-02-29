@@ -76,6 +76,10 @@ func (f *LockedFile) Read(p []byte) (n int, err error) {
 	return f.file.Read(p)
 }
 
+func (f *LockedFile) Truncate(size int64) error {
+	return f.file.Truncate(size)
+}
+
 func (f *LockedFile) CloseAndUnlock() error {
 	err1 := unix.FcntlFlock(f.file.Fd(), unix.F_SETLKW, f.lock)
 	err2 := f.file.Close()

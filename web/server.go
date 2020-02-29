@@ -26,16 +26,13 @@
 package web
 
 import (
-	"bufio"
 	"fmt"
 	template "html/template"
 	"log"
 	"net/http"
-	"strings"
 
 	auth "git.semlanik.org/semlanik/gostfix/auth"
 	common "git.semlanik.org/semlanik/gostfix/common"
-	config "git.semlanik.org/semlanik/gostfix/config"
 	db "git.semlanik.org/semlanik/gostfix/db"
 	utils "git.semlanik.org/semlanik/gostfix/utils"
 
@@ -92,12 +89,6 @@ func NewServer() *Server {
 		storage:       storage,
 	}
 
-	s.storage.AddUser("semlanik@semlanik.org", "testpassword", "Alexey Edelev")
-	s.storage.AddUser("junkmail@semlanik.org", "testpassword", "Alexey Edelev")
-	err = s.storage.AddEmail("semlanik@semlanik.org", "ci@semlanik.org")
-	err = s.storage.AddEmail("semlanik@semlanik.org", "shopping@semlanik.org")
-	err = s.storage.AddEmail("semlanik@semlanik.org", "junkmail@semlanik.org")
-	err = s.storage.AddEmail("junkmail@semlanik.org", "qqqqq@semlanik.org")
 	return s
 }
 
@@ -192,133 +183,14 @@ func (s *Server) handleMailbox(w http.ResponseWriter, r *http.Request) {
 	if !s.authenticator.Verify(user, token) {
 		s.logout(w, r)
 		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
-	}
-
-	mailPath := config.ConfigInstance().VMailboxBase + "/" + s.authenticator.MailPath(user)
-	if !utils.FileExists(mailPath) {
-		s.logout(w, r)
-		s.error(http.StatusInternalServerError, "Unable to access your mailbox. Please contact Administrator.", w, r)
 		return
 	}
 
-	file, err := utils.OpenAndLockWait(mailPath)
+	mailList, err := s.storage.MailList(user, user, "Inbox")
+
 	if err != nil {
-		s.logout(w, r)
-		s.error(http.StatusInternalServerError, "Unable to access your mailbox. Please contact Administrator.", w, r)
+		s.error(http.StatusInternalServerError, "Couldn't read email database", w, r)
 		return
-	}
-	defer file.CloseAndUnlock()
-
-	scanner := bufio.NewScanner(file)
-	activeBoundary := ""
-	var previousHeader *string = nil
-	var emails []*common.Mail
-	mandatoryHeaders := 0
-	email := NewEmail()
-	state := StateHeaderScan
-	contentType := "plain/text"
-	for scanner.Scan() {
-		if scanner.Text() == "" {
-			if state == StateHeaderScan && mandatoryHeaders&AtLeastOneHeaderMask == AtLeastOneHeaderMask {
-				boundaryCapture := utils.RegExpUtilsInstance().BoundaryFinder.FindStringSubmatch(contentType)
-				if len(boundaryCapture) == 2 {
-					activeBoundary = boundaryCapture[1]
-				} else {
-					activeBoundary = ""
-				}
-				state = StateBodyScan
-				// fmt.Printf("--------------------------Start body scan content type:%s boundary: %s -------------------------\n", contentType, activeBoundary)
-			} else if state == StateBodyScan {
-				// fmt.Printf("--------------------------Previous email-------------------------\n%v\n", email)
-				if activeBoundary == "" {
-					previousHeader = nil
-					activeBoundary = ""
-					// fmt.Printf("Actual headers: %d\n", mandatoryHeaders)
-					if mandatoryHeaders == AllHeaderMask {
-						emails = append(emails, email)
-					}
-					email = NewEmail()
-					contentType = "plain/text"
-					state = StateHeaderScan
-					mandatoryHeaders = 0
-				} else {
-					// fmt.Printf("Still in body scan\n")
-					continue
-				}
-			} else {
-				// fmt.Printf("Empty line in state %d\n", state)
-			}
-		}
-
-		if state == StateHeaderScan {
-			capture := utils.RegExpUtilsInstance().HeaderFinder.FindStringSubmatch(scanner.Text())
-			if len(capture) == 3 {
-				// fmt.Printf("capture Header %s : %s\n", strings.ToLower(capture[0]), strings.ToLower(capture[1]))
-				header := strings.ToLower(capture[1])
-				mandatoryHeaders |= AtLeastOneHeaderMask
-				switch header {
-				case "from":
-					previousHeader = &email.Header.From
-					mandatoryHeaders |= FromHeaderMask
-				case "to":
-					previousHeader = &email.Header.To
-					mandatoryHeaders |= ToHeaderMask
-				case "cc":
-					previousHeader = &email.Header.Cc
-				case "bcc":
-					previousHeader = &email.Header.Bcc
-					mandatoryHeaders |= ToHeaderMask
-				case "subject":
-					previousHeader = &email.Header.Subject
-				case "date":
-					previousHeader = &email.Header.Date
-					mandatoryHeaders |= DateHeaderMask
-				case "content-type":
-					previousHeader = &contentType
-				default:
-					previousHeader = nil
-				}
-				if previousHeader != nil {
-					*previousHeader += capture[2]
-				}
-				continue
-			}
-
-			capture = utils.RegExpUtilsInstance().FoldingFinder.FindStringSubmatch(scanner.Text())
-			if len(capture) == 2 && previousHeader != nil {
-				*previousHeader += capture[1]
-				continue
-			}
-		} else {
-			// email.Body.Content += scanner.Text() + "\n"
-			if activeBoundary != "" {
-				capture := utils.RegExpUtilsInstance().BoundaryEndFinder.FindStringSubmatch(scanner.Text())
-				if len(capture) == 2 {
-					// fmt.Printf("capture Boundary End %s\n", capture[1])
-					if activeBoundary == capture[1] {
-						state = StateBodyScan
-						activeBoundary = ""
-					}
-
-					continue
-				}
-				// capture = boundaryStartFinder.FindStringSubmatch(scanner.Text())
-				// if len(capture) == 2 && activeBoundary == capture[1] {
-				// 	// fmt.Printf("capture Boundary Start %s\n", capture[1])
-				// 	state = StateContentScan
-				// 	continue
-				// }
-			}
-		}
-	}
-
-	if state == StateBodyScan && mandatoryHeaders == AllHeaderMask { //Finalize if body read till EOF
-		// fmt.Printf("--------------------------Previous email-------------------------\n%v\n", email)
-
-		previousHeader = nil
-		activeBoundary = ""
-		emails = append(emails, email)
-		state = StateHeaderScan
 	}
 
 	fmt.Fprint(w, s.templater.ExecuteIndex(&struct {
@@ -326,7 +198,7 @@ func (s *Server) handleMailbox(w http.ResponseWriter, r *http.Request) {
 		MailList template.HTML
 		Version  template.HTML
 	}{
-		MailList: template.HTML(s.templater.ExecuteMailList(emails)),
+		MailList: template.HTML(s.templater.ExecuteMailList(mailList)),
 		Folders:  "Folders",
 		Version:  common.Version,
 	}))
@@ -350,7 +222,7 @@ func (s *Server) login(user, token string, w http.ResponseWriter, r *http.Reques
 }
 
 func (s *Server) error(code int, text string, w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusInternalServerError)
+	w.WriteHeader(code)
 	fmt.Fprint(w, s.templater.ExecuteError(&struct {
 		Code    int
 		Text    string
