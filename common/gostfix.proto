@@ -13,7 +13,7 @@ message MailHeader {
 	string to = 2;
 	string cc = 3;
 	string bcc = 4;
-	string date = 5;
+	sint64 date = 5;
 	string subject = 6;
 }
 
@@ -30,4 +30,14 @@ message Attachment {
 message AttachmentHeader {
 	string fileName = 1;
 	string contentType = 2;
+}
+
+message UserInfo {
+	string user = 1;
+	string fullName = 2;
+}
+
+message Frame {
+	sint32 skip = 1;
+	sint32 limit = 2;
 }

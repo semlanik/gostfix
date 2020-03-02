@@ -37,6 +37,7 @@ import (
 	bcrypt "golang.org/x/crypto/bcrypt"
 
 	bson "go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo "go.mongodb.org/mongo-driver/mongo"
 	options "go.mongodb.org/mongo-driver/mongo/options"
 
@@ -277,9 +278,23 @@ func (s *Storage) RemoveMail(user string, m *common.Mail) error {
 	return nil
 }
 
-func (s *Storage) MailList(user, email, folder string) ([]*common.MailMetadata, error) {
+func (s *Storage) MailList(user, email, folder string, frame common.Frame) ([]*common.MailMetadata, error) {
 	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
-	cur, err := mailsCollection.Find(context.Background(), bson.M{"email": email})
+
+	request := bson.A{
+		bson.M{"$match": bson.M{"email": email}},
+		bson.M{"$sort": bson.M{"mail.header.date": 1}},
+	}
+
+	if frame.Skip > 0 {
+		request = append(request, bson.M{"$skip": frame.Skip})
+	}
+
+	if frame.Limit > 0 {
+		request = append(request, bson.M{"$limit": frame.Limit})
+	}
+
+	cur, err := mailsCollection.Aggregate(context.Background(), request)
 
 	if err != nil {
 		return nil, err
@@ -301,8 +316,42 @@ func (s *Storage) MailList(user, email, folder string) ([]*common.MailMetadata, 
 	return headers, nil
 }
 
-func (s *Storage) GetMail(user string, header *common.MailHeader) (m *common.Mail, err error) {
-	return nil, nil
+func (s *Storage) GetUserInfo(user string) (*common.UserInfo, error) {
+	result := &common.UserInfo{}
+	err := s.usersCollection.FindOne(context.Background(), bson.M{"user": user}).Decode(result)
+	return result, err
+}
+
+func (s *Storage) GetMail(user string, id string) (m *common.Mail, err error) {
+	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
+
+	oId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	m = &common.Mail{}
+	result := &struct {
+		Mail *common.Mail
+	}{
+		Mail: m,
+	}
+	err = mailsCollection.FindOne(context.Background(), bson.M{"_id": oId}).Decode(result)
+	if err != nil {
+		return nil, err
+	}
+	return result.Mail, nil
+}
+
+func (s *Storage) SetRead(user string, id string, read bool) error {
+	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
+
+	oId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": bson.M{"read": true}})
+	return err
 }
 
 func (s *Storage) GetAttachment(user string, attachmentId string) (filePath string, err error) {

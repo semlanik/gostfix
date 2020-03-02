@@ -30,9 +30,9 @@ $(document).ready(function(){
         global: false,
         type: "POST"
     })
-    $(window).bind('hashchange', requestDetails);
-    requestDetails();
-    loadStatusLine();
+    $(window).bind('hashchange', requestDetails)
+    requestDetails()
+    loadStatusLine()
 })
 
 function openEmail(id) {
@@ -46,14 +46,16 @@ function requestDetails() {
         if (messageId != "") {
             $.ajax({
                 url: "/messageDetails",
-                data: {detailsUrl: messageId},
+                data: {messageId: messageId},
                 success: function(result) {
                     $("#details").html(result);
                     $("#maillist").css({pointerEvents: "none"})
                     $("#details").show()
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
-                    window.location.hash = ""
+                    $("#details").html(result);
+                    $("#maillist").css({pointerEvents: "none"})
+                    $("#details").show()
                 }
             })
         }
@@ -71,10 +73,28 @@ function loadStatusLine() {
     $.ajax({
         url: "/statusLine",
         success: function(result) {
-            $("#statusLine").html(result);
+            $("#statusLine").html(result)
         },
         error: function(jqXHR, textStatus, errorThrown) {
             //TODO: some toast message here once implemented
         }
     })
+}
+
+function localDate(timestamp) {
+    var today = new Date()
+    var date = new Date(timestamp*1000)
+
+    dateString = ""
+    if (today.getDay() == date.getDay()
+        && today.getMonth() == date.getMonth()
+        && today.getFullYear() == date.getFullYear()) {
+            dateString = date.toLocaleTimeString("en-US")
+    } else if (today.getFullYear() == date.getFullYear()) {
+        const options = { day: 'numeric', month: 'short' }
+        dateString = date.toLocaleDateString("en-US", options)
+    } else {
+        dateString = date.toLocaleDateString("en-US")
+    }
+    document.write(dateString)
 }

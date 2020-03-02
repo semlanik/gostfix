@@ -27,7 +27,9 @@ package scanner
 
 import (
 	"bufio"
+	"log"
 	"strings"
+	"time"
 
 	"git.semlanik.org/semlanik/gostfix/common"
 	utils "git.semlanik.org/semlanik/gostfix/utils"
@@ -145,15 +147,21 @@ func (pd *parseData) parseHeader(headerRaw string) {
 		case "subject":
 			pd.previousHeader = &pd.email.Header.Subject
 		case "date":
-			pd.previousHeader = &pd.email.Header.Date
-			pd.mandatoryHeaders |= DateHeaderMask
+			pd.previousHeader = nil
+			time, err := time.Parse(time.RFC1123Z, strings.Trim(capture[2], " \t"))
+			if err == nil {
+				pd.email.Header.Date = time.Unix()
+				pd.mandatoryHeaders |= DateHeaderMask
+			}
+			log.Printf("Invalid date format %s, %s", strings.Trim(capture[2], " \t"), err)
 		case "content-type":
 			pd.previousHeader = &pd.bodyContentType
 		default:
 			pd.previousHeader = nil
 		}
+
 		if pd.previousHeader != nil {
-			*pd.previousHeader += capture[2]
+			*pd.previousHeader = capture[2]
 		}
 		return
 	}

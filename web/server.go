@@ -156,7 +156,17 @@ func (s *Server) handleMessageDetails(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "")
 		return
 	}
-	fmt.Fprint(w, s.templater.ExecuteDetails(""))
+
+	messageId := r.FormValue("messageId")
+
+	mail, err := s.storage.GetMail(user, messageId)
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Unable to read message", w, r)
+		return
+	}
+
+	s.storage.SetRead(user, messageId, true)
+	fmt.Fprint(w, s.templater.ExecuteDetails(mail))
 }
 
 func (s *Server) handleStatusLine(w http.ResponseWriter, r *http.Request) {
@@ -186,7 +196,7 @@ func (s *Server) handleMailbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mailList, err := s.storage.MailList(user, user, "Inbox")
+	mailList, err := s.storage.MailList(user, user, "Inbox", common.Frame{Skip: 0, Limit: 0})
 
 	if err != nil {
 		s.error(http.StatusInternalServerError, "Couldn't read email database", w, r)

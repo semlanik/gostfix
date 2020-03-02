@@ -32,7 +32,6 @@ table.mailList {
 
 td.fromCol {
     width: 300pt;
-    font-weight: bold;
 }
 
 td.subjCol {
@@ -47,6 +46,14 @@ td.dateCol {
     overflow: hidden;
     text-overflow:ellipsis;
     white-space: nowrap;
+}
+
+tr.read {
+    font-weight: normal;
+}
+
+tr.unread {
+    font-weight: bold;
 }
 
 .materialLevel1 {

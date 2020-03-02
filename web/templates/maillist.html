@@ -6,7 +6,7 @@
                 <tr id="mail{{.Id}}" class="{{if .Read}}read{{else}}unread{{end}}" onclick="openEmail('{{.Id}}');">
                     <td class="fromCol">{{.Mail.Header.From}}</td>
                     <td class="subjCol">{{.Mail.Header.Subject}}</td>
-                    <td class="dateCol">{{.Mail.Header.Date}}</td>
+                    <td class="dateCol"><script type="text/javascript">localDate({{.Mail.Header.Date}})</script></td>
                 </tr>
                 {{else}}
                 <tr><td><b>Mail folder is empty</b></td></tr>
