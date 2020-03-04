@@ -39,6 +39,10 @@ import (
 	fsnotify "github.com/fsnotify/fsnotify"
 )
 
+const (
+	SignalReconfigure = iota
+)
+
 func NewEmail() *common.Mail {
 	return &common.Mail{
 		Header: &common.MailHeader{},
@@ -47,9 +51,10 @@ func NewEmail() *common.Mail {
 }
 
 type MailScanner struct {
-	watcher   *fsnotify.Watcher
-	emailMaps map[string]string
-	storage   *db.Storage
+	watcher       *fsnotify.Watcher
+	emailMaps     map[string]string
+	storage       *db.Storage
+	signalChannel chan int
 }
 
 func NewMailScanner() (ms *MailScanner) {
@@ -67,8 +72,9 @@ func NewMailScanner() (ms *MailScanner) {
 	}
 
 	ms = &MailScanner{
-		watcher: watcher,
-		storage: storage,
+		watcher:       watcher,
+		storage:       storage,
+		signalChannel: make(chan int),
 	}
 
 	return
@@ -140,38 +146,43 @@ func (ms *MailScanner) readEmailMaps() {
 		}
 	}
 	ms.emailMaps = emailMaps
+
+	for mailbox, mailPath := range ms.emailMaps {
+		if !utils.FileExists(mailPath) {
+			file, err := os.Create(mailPath)
+			if err != nil {
+				fmt.Printf("Unable to create mailbox for watching %s\n", err)
+				continue
+			}
+			file.Close()
+		}
+
+		mails := ms.readMailFile(mailPath)
+		for _, mail := range mails {
+			ms.storage.SaveMail(mailbox, "Inbox", mail)
+		}
+		log.Printf("New email for %s, emails read %d", mailPath, len(mails))
+
+		err := ms.watcher.Add(mailPath)
+		if err != nil {
+			fmt.Printf("Unable to add mailbox for watching\n")
+		} else {
+			fmt.Printf("Add mail file %s for watching\n", mailPath)
+		}
+	}
 }
 
 func (ms *MailScanner) Run() {
 	go func() {
 		ms.readEmailMaps()
 
-		for mailbox, mailPath := range ms.emailMaps {
-			if !utils.FileExists(mailPath) {
-				file, err := os.Create(mailPath)
-				if err != nil {
-					fmt.Printf("Unable to create mailbox for watching %s\n", err)
-					continue
-				}
-				file.Close()
-			}
-
-			mails := ms.readMailFile(mailPath)
-			for _, mail := range mails {
-				ms.storage.SaveMail(mailbox, "Inbox", mail)
-			}
-			log.Printf("New email for %s, emails read %d", mailPath, len(mails))
-
-			err := ms.watcher.Add(mailPath)
-			if err != nil {
-				fmt.Printf("Unable to add mailbox for watching\n")
-			} else {
-				fmt.Printf("Add mail file %s for watching\n", mailPath)
-			}
-		}
-
 		for {
 			select {
+			case signal := <-ms.signalChannel:
+				switch signal {
+				case SignalReconfigure:
+					ms.readEmailMaps()
+				}
 			case event, ok := <-ms.watcher.Events:
 				if !ok {
 					return

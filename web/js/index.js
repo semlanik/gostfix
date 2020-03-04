@@ -24,7 +24,8 @@
  */
 
 var detailsUrl = "details/"
-
+var updateTimerId = null
+var updateInterval = 5000
 $(document).ready(function(){
     $.ajaxSetup({
         global: false,
@@ -33,6 +34,9 @@ $(document).ready(function(){
     $(window).bind('hashchange', requestDetails)
     requestDetails()
     loadStatusLine()
+    clearInterval(updateTimerId)
+    // updateMessageList()
+    updateTimerId = setInterval(updateMessageList, updateInterval)
 })
 
 function openEmail(id) {
@@ -48,20 +52,19 @@ function requestDetails() {
                 url: "/messageDetails",
                 data: {messageId: messageId},
                 success: function(result) {
+                    $("#mail"+messageId).removeClass("unread")
+                    $("#mail"+messageId).addClass("read")
                     $("#details").html(result);
-                    $("#maillist").css({pointerEvents: "none"})
-                    $("#details").show()
+                    setDetailsVisible(true);
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
-                    $("#details").html(result);
-                    $("#maillist").css({pointerEvents: "none"})
-                    $("#details").show()
+                    $("#details").html(textStatus)
+                    setDetailsVisible(true)
                 }
             })
         }
     } else {
-        $("#details").hide()
-        $("#maillist").css({pointerEvents: "auto"})
+        setDetailsVisible(false)
     }
 }
 
@@ -96,5 +99,81 @@ function localDate(timestamp) {
     } else {
         dateString = date.toLocaleDateString("en-US")
     }
-    document.write(dateString)
+
+    return dateString
+}
+
+function setRead(messageId, read) {
+    $.ajax({
+        url: "/setRead",
+        data: {messageId: messageId,
+               read: read},
+        success: function(result) {
+            if (read) {
+                if ($("#readIcon"+messageId)) {
+                    $("#readIcon"+messageId).attr("src", "/assets/read.svg")
+                }
+                $("#mail"+messageId).removeClass("unread")
+                $("#mail"+messageId).addClass("read")
+            } else {
+                if ($("#readIcon"+messageId)) {
+                    $("#readIcon"+messageId).attr("src", "/assets/unread.svg")
+                }
+                $("#mail"+messageId).removeClass("read")
+                $("#mail"+messageId).addClass("unread")
+            }
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+        }
+    })
+}
+
+function toggleRead(messageId) {
+    if ($("#readIcon"+messageId)) {
+        setRead(messageId, $("#readIcon"+messageId).attr("src") == "/assets/unread.svg")
+    }
+}
+
+function removeMail(messageId) {
+    $.ajax({
+        url: "/remove",
+        data: {messageId: messageId},
+        success: function(result) {
+            $("#mail"+messageId).remove();
+            closeDetails()
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+        }
+    })
+}
+
+function setDetailsVisible(visible) {
+    if (visible) {
+        $("#details").show()
+        $("#messageList").css({pointerEvents: "none"})
+        clearInterval(updateTimerId)
+    } else {
+        $("#details").hide()
+        $("#details").html("")
+        $("#messageList").css({pointerEvents: "auto"})
+        updateTimerId = setInterval(updateMessageList, updateInterval)
+        updateMessageList()
+    }
+}
+
+function updateMessageList() {
+    $.ajax({
+        url: "/messageList",
+        success: function(result) {
+            if($("#messageList")) {
+                // console.log("result: " + result)
+                $("#messageList").html(result)
+            }
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            if($("#messageList")) {
+                $("#messageList").html(textStatus)
+            }
+        }
+    })
 }

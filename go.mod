@@ -9,6 +9,7 @@ require (
 	github.com/golang/protobuf v1.3.4
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/sessions v1.2.0
+	github.com/jhillyerd/enmime v0.8.0
 	github.com/lyft/protoc-gen-star v0.4.14 // indirect
 	github.com/spf13/afero v1.2.2 // indirect
 	go.mongodb.org/mongo-driver v1.3.0

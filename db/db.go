@@ -50,7 +50,6 @@ type Storage struct {
 	tokensCollection    *mongo.Collection
 	emailsCollection    *mongo.Collection
 	allEmailsCollection *mongo.Collection
-	mailsCollection     *mongo.Collection
 }
 
 func qualifiedMailCollection(user string) string {
@@ -98,7 +97,6 @@ func NewStorage() (s *Storage, err error) {
 		tokensCollection:    db.Collection("tokens"),
 		emailsCollection:    db.Collection("emails"),
 		allEmailsCollection: db.Collection("allEmails"),
-		mailsCollection:     db.Collection("mails"),
 	}
 
 	//Initial database setup
@@ -274,8 +272,16 @@ func (s *Storage) SaveMail(email, folder string, m *common.Mail) error {
 	return nil
 }
 
-func (s *Storage) RemoveMail(user string, m *common.Mail) error {
-	return nil
+func (s *Storage) RemoveMail(user string, messageId string) error {
+	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
+
+	oId, err := primitive.ObjectIDFromHex(messageId)
+	if err != nil {
+		return err
+	}
+
+	_, err = mailsCollection.DeleteOne(context.Background(), bson.M{"_id": oId})
+	return err
 }
 
 func (s *Storage) MailList(user, email, folder string, frame common.Frame) ([]*common.MailMetadata, error) {
@@ -322,6 +328,30 @@ func (s *Storage) GetUserInfo(user string) (*common.UserInfo, error) {
 	return result, err
 }
 
+func (s *Storage) GetEmailStats(user string, email string) (unread, total int, err error) {
+	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
+	result := &struct {
+		Total  int
+		Unread int
+	}{}
+
+	cur, err := mailsCollection.Aggregate(context.Background(), bson.A{bson.M{"$match": bson.M{"email": email, "read": false}}, bson.M{"$count": "unread"}})
+	if err == nil && cur.Next(context.Background()) {
+		cur.Decode(result)
+	} else {
+		return 0, 0, err
+	}
+
+	cur, err = mailsCollection.Aggregate(context.Background(), bson.A{bson.M{"$match": bson.M{"email": email}}, bson.M{"$count": "total"}})
+	if err == nil && cur.Next(context.Background()) {
+		cur.Decode(result)
+	} else {
+		return 0, 0, err
+	}
+
+	return result.Unread, result.Total, err
+}
+
 func (s *Storage) GetMail(user string, id string) (m *common.Mail, err error) {
 	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
 
@@ -350,7 +380,7 @@ func (s *Storage) SetRead(user string, id string, read bool) error {
 	if err != nil {
 		return err
 	}
-	_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": bson.M{"read": true}})
+	_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": bson.M{"read": read}})
 	return err
 }
 

@@ -77,3 +77,22 @@ tr.unread {
 .copyrights {
     color: #b8d4bc
 }
+
+.primaryText {
+    color: black;
+    font-weight: bold;
+    font-size: 12pt;
+}
+
+.secondaryText {
+    color: #777777;
+    font-weight: normal;
+    font-size: 10pt;
+}
+
+.messageBody {
+    border-radius: 3pt;
+    border-width: 1pt;
+    border-style: solid;
+    border-color: #41cd52;
+}

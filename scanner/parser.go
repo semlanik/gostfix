@@ -27,12 +27,17 @@ package scanner
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/hex"
 	"log"
+	"os"
 	"strings"
 	"time"
 
 	"git.semlanik.org/semlanik/gostfix/common"
 	utils "git.semlanik.org/semlanik/gostfix/utils"
+	"github.com/google/uuid"
+	enmime "github.com/jhillyerd/enmime"
 )
 
 const (
@@ -98,6 +103,7 @@ func parseFile(file *utils.LockedFile) []*common.Mail {
 			if scanner.Text() == "" {
 				if pd.state == StateBodyScan && pd.activeBoundary == "" {
 					if pd.mandatoryHeaders == AllHeaderMask {
+						pd.parseBody()
 						emails = append(emails, pd.email)
 					}
 					pd.reset()
@@ -118,6 +124,7 @@ func parseFile(file *utils.LockedFile) []*common.Mail {
 
 	if pd.state == StateBodyScan {
 		if pd.mandatoryHeaders == AllHeaderMask {
+			pd.parseBody()
 			emails = append(emails, pd.email)
 		}
 		pd.reset()
@@ -161,7 +168,7 @@ func (pd *parseData) parseHeader(headerRaw string) {
 		}
 
 		if pd.previousHeader != nil {
-			*pd.previousHeader = capture[2]
+			*pd.previousHeader = strings.Trim(capture[2], " \t")
 		}
 		return
 	}
@@ -170,5 +177,35 @@ func (pd *parseData) parseHeader(headerRaw string) {
 	capture = utils.RegExpUtilsInstance().FoldingFinder.FindStringSubmatch(headerRaw)
 	if len(capture) == 2 && pd.previousHeader != nil {
 		*pd.previousHeader += capture[1]
+	}
+}
+
+func (pd *parseData) parseBody() {
+	buffer := bytes.NewBufferString("content-type:" + pd.bodyContentType + "\n\n" + pd.bodyData)
+	en, err := enmime.ReadEnvelope(buffer)
+	if err != nil {
+		log.Printf("Unable to read mail body %s\n\nBody content: %s\n\n", err, pd.bodyData)
+		return
+	}
+
+	pd.email.Body = &common.MailBody{}
+
+	pd.email.Body.PlainText = en.Text
+	pd.email.Body.RichText = en.HTML
+
+	for _, attachment := range en.Attachments {
+		uuid := uuid.New()
+		fileName := hex.EncodeToString(uuid[:])
+		attachmentFile, err := os.Create(fileName)
+		log.Printf("Attachment found %s\n", fileName)
+		if err != nil {
+			continue
+		}
+		pd.email.Body.Attachments = append(pd.email.Body.Attachments, &common.AttachmentHeader{
+			Id:          fileName,
+			FileName:    attachment.FileName,
+			ContentType: attachment.ContentType,
+		})
+		attachmentFile.Write(attachment.Content)
 	}
 }

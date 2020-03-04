@@ -28,8 +28,9 @@ message Attachment {
 }
 
 message AttachmentHeader {
-	string fileName = 1;
-	string contentType = 2;
+	string id = 1;
+	string fileName = 2;
+	string contentType = 3;
 }
 
 message UserInfo {

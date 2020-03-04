@@ -113,8 +113,18 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			s.handleMessageDetails(w, r)
 		case "/statusLine":
 			s.handleStatusLine(w, r)
-		default:
+		case "/":
 			s.handleMailbox(w, r)
+		case "/mailbox":
+			s.handleMailbox(w, r)
+		case "/setRead":
+			s.handleSetRead(w, r)
+		case "/remove":
+			s.handleRemove(w, r)
+		case "/messageList":
+			s.handleMessageList(w, r)
+		default:
+			s.error(http.StatusBadRequest, "Invalid request", w, r)
 		}
 	}
 }
@@ -166,7 +176,20 @@ func (s *Server) handleMessageDetails(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.storage.SetRead(user, messageId, true)
-	fmt.Fprint(w, s.templater.ExecuteDetails(mail))
+	fmt.Fprint(w, s.templater.ExecuteDetails(&struct {
+		From      string
+		To        string
+		Subject   string
+		Text      template.HTML
+		MessageId string
+		Read      bool
+	}{
+		From:      mail.Header.From,
+		To:        mail.Header.To,
+		Subject:   mail.Header.Subject,
+		Text:      template.HTML(mail.Body.RichText),
+		MessageId: messageId,
+	}))
 }
 
 func (s *Server) handleStatusLine(w http.ResponseWriter, r *http.Request) {
@@ -177,14 +200,26 @@ func (s *Server) handleStatusLine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	info, err := s.storage.GetUserInfo(user)
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Could not read user info", w, r)
+		return
+	}
+
+	unread, total, err := s.storage.GetEmailStats(user, user)
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Could not read user stats", w, r)
+		return
+	}
+
 	fmt.Fprint(w, s.templater.ExecuteStatusLine(&struct {
 		Name   string
-		Read   int
 		Unread int
+		Total  int
 	}{
-		Name:   "No name", //TODO: read from database
-		Read:   0,         //TODO: read from database
-		Unread: 0,         //TODO: read from database
+		Name:   info.FullName,
+		Unread: unread,
+		Total:  total,
 	}))
 }
 
@@ -214,6 +249,53 @@ func (s *Server) handleMailbox(w http.ResponseWriter, r *http.Request) {
 	}))
 }
 
+func (s *Server) handleSetRead(w http.ResponseWriter, r *http.Request) {
+	user, token := s.extractAuth(w, r)
+	if !s.authenticator.Verify(user, token) {
+		s.logout(w, r)
+		s.error(http.StatusUnauthorized, "Unknown user credentials", w, r)
+		return
+	}
+
+	read := r.FormValue("read") == "true"
+	messageId := r.FormValue("messageId")
+	fmt.Printf("SetRead %s, %s, %v\n", user, messageId, read)
+	s.storage.SetRead(user, messageId, read)
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, "Test")
+}
+
+func (s *Server) handleRemove(w http.ResponseWriter, r *http.Request) {
+	user, token := s.extractAuth(w, r)
+	if !s.authenticator.Verify(user, token) {
+		s.logout(w, r)
+		s.error(http.StatusUnauthorized, "Unknown user credentials", w, r)
+		return
+	}
+
+	messageId := r.FormValue("messageId")
+
+	s.storage.RemoveMail(user, messageId)
+}
+
+func (s *Server) handleMessageList(w http.ResponseWriter, r *http.Request) {
+	user, token := s.extractAuth(w, r)
+	if !s.authenticator.Verify(user, token) {
+		s.logout(w, r)
+		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
+		return
+	}
+
+	mailList, err := s.storage.MailList(user, user, "Inbox", common.Frame{Skip: 0, Limit: 0})
+
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Couldn't read email database", w, r)
+		return
+	}
+
+	fmt.Fprint(w, s.templater.ExecuteMailList(mailList))
+}
+
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("logout")
 
@@ -239,7 +321,7 @@ func (s *Server) error(code int, text string, w http.ResponseWriter, r *http.Req
 		Version string
 	}{
 		Code:    code,
-		Text:    "Unable to access your mailbox. Please contact Administrator.",
+		Text:    text,
 		Version: common.Version,
 	}))
 }

@@ -37,10 +37,13 @@ import (
 const configPath = "data/main.ini"
 
 const (
-	KeyPostfixConfig = "postfix_config"
-	KeyMongoAddress  = "mongo_address"
-	KeyMongoUser     = "mongo_user"
-	KeyMongoPassword = "mongo_password"
+	KeyPostfixConfig       = "postfix_config"
+	KeyMongoAddress        = "mongo_address"
+	KeyMongoUser           = "mongo_user"
+	KeyMongoPassword       = "mongo_password"
+	KeyAttachmentsPath     = "attachments_path"
+	KeyAttachmentsUser     = "attachments_user"
+	KeyAttachmentsPassword = "attachments_password"
 )
 
 const (
@@ -72,6 +75,7 @@ type gostfixConfig struct {
 	MongoUser       string
 	MongoPassword   string
 	MongoAddress    string
+	AttachmentsPath string
 }
 
 func newConfig() (config *gostfixConfig, err error) {
@@ -139,6 +143,12 @@ func newConfig() (config *gostfixConfig, err error) {
 		mongoAddress = "localhost:27017"
 	}
 
+	attachmentsPath := cfg.Section("").Key(KeyAttachmentsPath).String()
+
+	if attachmentsPath == "" {
+		attachmentsPath = "attachments"
+	}
+
 	config = &gostfixConfig{
 		VMailboxBase:    baseDir,
 		VMailboxMaps:    mapsList[1],
@@ -146,6 +156,7 @@ func newConfig() (config *gostfixConfig, err error) {
 		MongoUser:       mongoUser,
 		MongoPassword:   mongoPassword,
 		MongoAddress:    mongoAddress,
+		AttachmentsPath: attachmentsPath,
 	}
 	return
 }
