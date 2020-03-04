@@ -71,6 +71,14 @@ func NewMailScanner() (ms *MailScanner) {
 		return
 	}
 
+	if !utils.DirectoryExists(config.ConfigInstance().AttachmentsPath) {
+		err = os.Mkdir(config.ConfigInstance().AttachmentsPath, 0755)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+	}
+
 	ms = &MailScanner{
 		watcher:       watcher,
 		storage:       storage,

@@ -26,6 +26,9 @@
 var detailsUrl = "details/"
 var updateTimerId = null
 var updateInterval = 5000
+var mailbox = ""
+var mailboxRegex = /^(\/m\d+)/g
+
 $(document).ready(function(){
     $.ajaxSetup({
         global: false,
@@ -33,10 +36,21 @@ $(document).ready(function(){
     })
     $(window).bind('hashchange', requestDetails)
     requestDetails()
+
+    urlPaths = mailboxRegex.exec($(location).attr('pathname'))
+    if (urlPaths != null && urlPaths.length === 2) {
+        mailbox = urlPaths[0]
+    } else {
+        mailbox = ""
+    }
+
+    loadFolders()
     loadStatusLine()
-    clearInterval(updateTimerId)
-    // updateMessageList()
-    updateTimerId = setInterval(updateMessageList, updateInterval)
+    updateMailList()
+    if(mailbox != "") {
+        clearInterval(updateTimerId)
+        updateTimerId = setInterval(updateMailList, updateInterval)
+    }
 })
 
 function openEmail(id) {
@@ -46,14 +60,14 @@ function openEmail(id) {
 function requestDetails() {
     var hashLocation = window.location.hash
     if (hashLocation.startsWith("#" + detailsUrl)) {
-        var messageId = hashLocation.replace(/^#details\//, "")
-        if (messageId != "") {
+        var mailId = hashLocation.replace(/^#details\//, "")
+        if (mailId != "") {
             $.ajax({
-                url: "/messageDetails",
-                data: {messageId: messageId},
+                url: "/mail",
+                data: {mailId: mailId},
                 success: function(result) {
-                    $("#mail"+messageId).removeClass("unread")
-                    $("#mail"+messageId).addClass("read")
+                    $("#mail"+mailId).removeClass("unread")
+                    $("#mail"+mailId).addClass("read")
                     $("#details").html(result);
                     setDetailsVisible(true);
                 },
@@ -68,13 +82,30 @@ function requestDetails() {
     }
 }
 
+function loadFolders() {
+    if (mailbox == "") {
+        $("#folders").html("Unable to load folder list")
+        return
+    }
+
+    $.ajax({
+        url: mailbox + "/folders",
+        success: function(result) {
+            $("#folders").html(result)
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            //TODO: some toast message here once implemented
+        }
+    })
+}
+
 function closeDetails() {
     window.location.hash = ""
 }
 
 function loadStatusLine() {
     $.ajax({
-        url: "/statusLine",
+        url: mailbox + "/statusLine",
         success: function(result) {
             $("#statusLine").html(result)
         },
@@ -103,24 +134,24 @@ function localDate(timestamp) {
     return dateString
 }
 
-function setRead(messageId, read) {
+function setRead(mailId, read) {
     $.ajax({
         url: "/setRead",
-        data: {messageId: messageId,
+        data: {mailId: mailId,
                read: read},
         success: function(result) {
             if (read) {
-                if ($("#readIcon"+messageId)) {
-                    $("#readIcon"+messageId).attr("src", "/assets/read.svg")
+                if ($("#readIcon"+mailId)) {
+                    $("#readIcon"+mailId).attr("src", "/assets/read.svg")
                 }
-                $("#mail"+messageId).removeClass("unread")
-                $("#mail"+messageId).addClass("read")
+                $("#mail"+mailId).removeClass("unread")
+                $("#mail"+mailId).addClass("read")
             } else {
-                if ($("#readIcon"+messageId)) {
-                    $("#readIcon"+messageId).attr("src", "/assets/unread.svg")
+                if ($("#readIcon"+mailId)) {
+                    $("#readIcon"+mailId).attr("src", "/assets/unread.svg")
                 }
-                $("#mail"+messageId).removeClass("read")
-                $("#mail"+messageId).addClass("unread")
+                $("#mail"+mailId).removeClass("read")
+                $("#mail"+mailId).addClass("unread")
             }
         },
         error: function(jqXHR, textStatus, errorThrown) {
@@ -128,18 +159,18 @@ function setRead(messageId, read) {
     })
 }
 
-function toggleRead(messageId) {
-    if ($("#readIcon"+messageId)) {
-        setRead(messageId, $("#readIcon"+messageId).attr("src") == "/assets/unread.svg")
+function toggleRead(mailId) {
+    if ($("#readIcon"+mailId)) {
+        setRead(mailId, $("#readIcon"+mailId).attr("src") == "/assets/unread.svg")
     }
 }
 
-function removeMail(messageId) {
+function removeMail(mailId) {
     $.ajax({
         url: "/remove",
-        data: {messageId: messageId},
+        data: {mailId: mailId},
         success: function(result) {
-            $("#mail"+messageId).remove();
+            $("#mail"+mailId).remove();
             closeDetails()
         },
         error: function(jqXHR, textStatus, errorThrown) {
@@ -150,29 +181,35 @@ function removeMail(messageId) {
 function setDetailsVisible(visible) {
     if (visible) {
         $("#details").show()
-        $("#messageList").css({pointerEvents: "none"})
+        $("#mailList").css({pointerEvents: "none"})
         clearInterval(updateTimerId)
     } else {
         $("#details").hide()
         $("#details").html("")
-        $("#messageList").css({pointerEvents: "auto"})
-        updateTimerId = setInterval(updateMessageList, updateInterval)
-        updateMessageList()
+        $("#mailList").css({pointerEvents: "auto"})
+        updateTimerId = setInterval(updateMailList, updateInterval)
     }
 }
 
-function updateMessageList() {
+function updateMailList() {
+    if (mailbox == "") {
+        if($("#mailList")) {
+            $("#mailList").html("Unable to load message list")
+        }
+        return
+    }
+
     $.ajax({
-        url: "/messageList",
+        url: mailbox + "/mailList",
         success: function(result) {
-            if($("#messageList")) {
+            if($("#mailList")) {
                 // console.log("result: " + result)
-                $("#messageList").html(result)
+                $("#mailList").html(result)
             }
         },
         error: function(jqXHR, textStatus, errorThrown) {
-            if($("#messageList")) {
-                $("#messageList").html(textStatus)
+            if($("#mailList")) {
+                $("#mailList").html(textStatus)
             }
         }
     })

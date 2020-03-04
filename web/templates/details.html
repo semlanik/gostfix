@@ -5,13 +5,13 @@
             <span class="secondaryText">To: {{.To}}</span></br>
             <span class="primaryText">Subject: {{.Subject}}</span></br>
         </div>
-        <img id="readIcon{{.MessageId}}" class="iconBtn" style="width: 20pt; margin-right: 10pt;" onclick="toggleRead({{.MessageId}});" src="assets/read.svg"/>
-        <img id="deleteIcon" class="iconBtn" style="width: 20pt; margin-right: 10pt;" onclick="removeMail({{.MessageId}});" src="assets/remove.svg"/>
+        <img id="readIcon{{.MailId}}" class="iconBtn" style="width: 20pt; margin-right: 10pt;" onclick="toggleRead({{.MailId}});" src="/assets/read.svg"/>
+        <img id="deleteIcon" class="iconBtn" style="width: 20pt; margin-right: 10pt;" onclick="removeMail({{.MailId}});" src="/assets/remove.svg"/>
         <div class="btn materialLevel1" style="width: 40pt; right: 0pt; top: 0pt; margin: auto;" onclick="closeDetails();">
-            <img src="assets/back.svg" style="width: 20pt"/>
+            <img src="/assets/back.svg" style="width: 20pt"/>
         </div>
     </div>
-    <div class="scrollable messageBody" style="margin-top: 10pt;">
+    <div class="scrollable mailBody" style="margin-top: 10pt;">
         <div style="padding: 5pt;">{{.Text}}</div>
     </div>
 </div>

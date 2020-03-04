@@ -35,6 +35,7 @@ import (
 	"time"
 
 	"git.semlanik.org/semlanik/gostfix/common"
+	"git.semlanik.org/semlanik/gostfix/config"
 	utils "git.semlanik.org/semlanik/gostfix/utils"
 	"github.com/google/uuid"
 	enmime "github.com/jhillyerd/enmime"
@@ -159,8 +160,9 @@ func (pd *parseData) parseHeader(headerRaw string) {
 			if err == nil {
 				pd.email.Header.Date = time.Unix()
 				pd.mandatoryHeaders |= DateHeaderMask
+			} else {
+				log.Printf("Invalid date format %s, %s", strings.Trim(capture[2], " \t"), err)
 			}
-			log.Printf("Invalid date format %s, %s", strings.Trim(capture[2], " \t"), err)
 		case "content-type":
 			pd.previousHeader = &pd.bodyContentType
 		default:
@@ -196,9 +198,10 @@ func (pd *parseData) parseBody() {
 	for _, attachment := range en.Attachments {
 		uuid := uuid.New()
 		fileName := hex.EncodeToString(uuid[:])
-		attachmentFile, err := os.Create(fileName)
+		attachmentFile, err := os.Create(config.ConfigInstance().AttachmentsPath + "/" + fileName)
 		log.Printf("Attachment found %s\n", fileName)
 		if err != nil {
+			log.Printf("Unable to save attachment %s %s\n", fileName, err)
 			continue
 		}
 		pd.email.Body.Attachments = append(pd.email.Body.Attachments, &common.AttachmentHeader{

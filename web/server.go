@@ -27,9 +27,9 @@ package web
 
 import (
 	"fmt"
-	template "html/template"
 	"log"
 	"net/http"
+	"strconv"
 
 	auth "git.semlanik.org/semlanik/gostfix/auth"
 	common "git.semlanik.org/semlanik/gostfix/common"
@@ -103,28 +103,37 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		utils.StartsWith(r.URL.Path, "/assets/") ||
 		utils.StartsWith(r.URL.Path, "/js/") {
 		s.fileServer.ServeHTTP(w, r)
+	} else if cap := utils.RegExpUtilsInstance().MailboxFinder.FindStringSubmatch(r.URL.Path); len(cap) == 3 {
+		user, token := s.extractAuth(w, r)
+		if !s.authenticator.Verify(user, token) {
+			s.logout(w, r)
+			http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
+			return
+		}
+
+		mailbox, err := strconv.Atoi(cap[1])
+		if err != nil || mailbox < 0 {
+			http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
+			return
+		}
+
+		path := cap[2]
+
+		s.handleMailboxRequest(path, user, mailbox, w, r)
 	} else {
 		switch r.URL.Path {
 		case "/login":
 			s.handleLogin(w, r)
 		case "/logout":
 			s.handleLogout(w, r)
-		case "/messageDetails":
-			s.handleMessageDetails(w, r)
-		case "/statusLine":
-			s.handleStatusLine(w, r)
-		case "/":
-			s.handleMailbox(w, r)
-		case "/mailbox":
-			s.handleMailbox(w, r)
+		case "/mail":
+			fallthrough
 		case "/setRead":
-			s.handleSetRead(w, r)
+			fallthrough
 		case "/remove":
-			s.handleRemove(w, r)
-		case "/messageList":
-			s.handleMessageList(w, r)
+			s.handleMailRequest(w, r)
 		default:
-			s.error(http.StatusBadRequest, "Invalid request", w, r)
+			http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
 		}
 	}
 }
@@ -143,7 +152,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	//Check if user already logged in and entered login page accidently
 	if s.authenticator.Verify(s.extractAuth(w, r)) {
-		http.Redirect(w, r, "/mailbox", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -157,143 +166,6 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	s.logout(w, r)
 	http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
-}
-
-func (s *Server) handleMessageDetails(w http.ResponseWriter, r *http.Request) {
-	//TODO: Not implemented yet. Need database mail storage implemented first
-	user, token := s.extractAuth(w, r)
-	if !s.authenticator.Verify(user, token) {
-		fmt.Fprint(w, "")
-		return
-	}
-
-	messageId := r.FormValue("messageId")
-
-	mail, err := s.storage.GetMail(user, messageId)
-	if err != nil {
-		s.error(http.StatusInternalServerError, "Unable to read message", w, r)
-		return
-	}
-
-	s.storage.SetRead(user, messageId, true)
-	fmt.Fprint(w, s.templater.ExecuteDetails(&struct {
-		From      string
-		To        string
-		Subject   string
-		Text      template.HTML
-		MessageId string
-		Read      bool
-	}{
-		From:      mail.Header.From,
-		To:        mail.Header.To,
-		Subject:   mail.Header.Subject,
-		Text:      template.HTML(mail.Body.RichText),
-		MessageId: messageId,
-	}))
-}
-
-func (s *Server) handleStatusLine(w http.ResponseWriter, r *http.Request) {
-	//TODO: Not implemented yet. Need database mail storage implemented first
-	user, token := s.extractAuth(w, r)
-	if !s.authenticator.Verify(user, token) {
-		fmt.Fprint(w, "")
-		return
-	}
-
-	info, err := s.storage.GetUserInfo(user)
-	if err != nil {
-		s.error(http.StatusInternalServerError, "Could not read user info", w, r)
-		return
-	}
-
-	unread, total, err := s.storage.GetEmailStats(user, user)
-	if err != nil {
-		s.error(http.StatusInternalServerError, "Could not read user stats", w, r)
-		return
-	}
-
-	fmt.Fprint(w, s.templater.ExecuteStatusLine(&struct {
-		Name   string
-		Unread int
-		Total  int
-	}{
-		Name:   info.FullName,
-		Unread: unread,
-		Total:  total,
-	}))
-}
-
-func (s *Server) handleMailbox(w http.ResponseWriter, r *http.Request) {
-	user, token := s.extractAuth(w, r)
-	if !s.authenticator.Verify(user, token) {
-		s.logout(w, r)
-		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
-		return
-	}
-
-	mailList, err := s.storage.MailList(user, user, "Inbox", common.Frame{Skip: 0, Limit: 0})
-
-	if err != nil {
-		s.error(http.StatusInternalServerError, "Couldn't read email database", w, r)
-		return
-	}
-
-	fmt.Fprint(w, s.templater.ExecuteIndex(&struct {
-		Folders  template.HTML
-		MailList template.HTML
-		Version  template.HTML
-	}{
-		MailList: template.HTML(s.templater.ExecuteMailList(mailList)),
-		Folders:  "Folders",
-		Version:  common.Version,
-	}))
-}
-
-func (s *Server) handleSetRead(w http.ResponseWriter, r *http.Request) {
-	user, token := s.extractAuth(w, r)
-	if !s.authenticator.Verify(user, token) {
-		s.logout(w, r)
-		s.error(http.StatusUnauthorized, "Unknown user credentials", w, r)
-		return
-	}
-
-	read := r.FormValue("read") == "true"
-	messageId := r.FormValue("messageId")
-	fmt.Printf("SetRead %s, %s, %v\n", user, messageId, read)
-	s.storage.SetRead(user, messageId, read)
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, "Test")
-}
-
-func (s *Server) handleRemove(w http.ResponseWriter, r *http.Request) {
-	user, token := s.extractAuth(w, r)
-	if !s.authenticator.Verify(user, token) {
-		s.logout(w, r)
-		s.error(http.StatusUnauthorized, "Unknown user credentials", w, r)
-		return
-	}
-
-	messageId := r.FormValue("messageId")
-
-	s.storage.RemoveMail(user, messageId)
-}
-
-func (s *Server) handleMessageList(w http.ResponseWriter, r *http.Request) {
-	user, token := s.extractAuth(w, r)
-	if !s.authenticator.Verify(user, token) {
-		s.logout(w, r)
-		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
-		return
-	}
-
-	mailList, err := s.storage.MailList(user, user, "Inbox", common.Frame{Skip: 0, Limit: 0})
-
-	if err != nil {
-		s.error(http.StatusInternalServerError, "Couldn't read email database", w, r)
-		return
-	}
-
-	fmt.Fprint(w, s.templater.ExecuteMailList(mailList))
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
@@ -310,10 +182,10 @@ func (s *Server) login(user, token string, w http.ResponseWriter, r *http.Reques
 	session.Values["user"] = user
 	session.Values["token"] = token
 	session.Save(r, w)
-	http.Redirect(w, r, "/mailbox", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
 }
 
-func (s *Server) error(code int, text string, w http.ResponseWriter, r *http.Request) {
+func (s *Server) error(code int, text string, w http.ResponseWriter) {
 	w.WriteHeader(code)
 	fmt.Fprint(w, s.templater.ExecuteError(&struct {
 		Code    int

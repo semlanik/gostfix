@@ -39,6 +39,7 @@ const (
 	ErrorTemplateName      = "error.html"
 	LoginTemplateName      = "login.html"
 	StatusLineTemplateName = "statusline.html"
+	FoldersTemplateName    = "folders.html"
 )
 
 type Templater struct {
@@ -48,6 +49,7 @@ type Templater struct {
 	errorTemplate      *template.Template
 	loginTemplate      *template.Template
 	statusLineTemplate *template.Template
+	foldersTemaplate   *template.Template
 }
 
 func NewTemplater(templatesPath string) (t *Templater) {
@@ -82,6 +84,11 @@ func NewTemplater(templatesPath string) (t *Templater) {
 		log.Fatal(err)
 	}
 
+	folders, err := parseTemplate(templatesPath + "/" + FoldersTemplateName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	t = &Templater{
 		indexTemplate:      index,
 		mailListTemplate:   maillist,
@@ -89,6 +96,7 @@ func NewTemplater(templatesPath string) (t *Templater) {
 		errorTemplate:      errors,
 		loginTemplate:      login,
 		statusLineTemplate: statusLine,
+		foldersTemaplate:   folders,
 	}
 	return
 }
@@ -124,6 +132,10 @@ func (t *Templater) ExecuteLogin(data interface{}) string {
 
 func (t *Templater) ExecuteStatusLine(data interface{}) string {
 	return executeTemplateCommon(t.statusLineTemplate, data)
+}
+
+func (t *Templater) ExecuteFolders(data interface{}) string {
+	return executeTemplateCommon(t.foldersTemaplate, data)
 }
 
 func executeTemplateCommon(t *template.Template, values interface{}) string {

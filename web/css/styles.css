@@ -90,7 +90,7 @@ tr.unread {
     font-size: 10pt;
 }
 
-.messageBody {
+.mailBody {
     border-radius: 3pt;
     border-width: 1pt;
     border-style: solid;

@@ -30,6 +30,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -272,10 +273,10 @@ func (s *Storage) SaveMail(email, folder string, m *common.Mail) error {
 	return nil
 }
 
-func (s *Storage) RemoveMail(user string, messageId string) error {
+func (s *Storage) RemoveMail(user string, mailId string) error {
 	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
 
-	oId, err := primitive.ObjectIDFromHex(messageId)
+	oId, err := primitive.ObjectIDFromHex(mailId)
 	if err != nil {
 		return err
 	}
@@ -314,11 +315,11 @@ func (s *Storage) MailList(user, email, folder string, frame common.Frame) ([]*c
 			log.Printf("Unable to read database mail record: %s", err)
 			continue
 		}
-		log.Printf("Add message: %s", result.Id)
+		// fmt.Printf("Add mail: %s", result.Id)
 		headers = append(headers, result)
 	}
 
-	log.Printf("Mails read from database: %v", headers)
+	// fmt.Printf("Mails read from database: %v", headers)
 	return headers, nil
 }
 
@@ -392,8 +393,16 @@ func (s *Storage) GetUsers() (users []string, err error) {
 	return nil, nil
 }
 
-func (s *Storage) GetEmails(user []string) (emails []string, err error) {
-	return nil, nil
+func (s *Storage) GetEmails(user string) (emails []string, err error) {
+	fmt.Printf("user: %s\n", user)
+	result := &struct {
+		Email []string
+	}{}
+	err = s.emailsCollection.FindOne(context.Background(), bson.M{"user": user}).Decode(result)
+	if err != nil {
+		return nil, err
+	}
+	return result.Email, nil
 }
 
 func (s *Storage) GetAllEmails() (emails []string, err error) {
