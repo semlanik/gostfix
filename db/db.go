@@ -289,7 +289,7 @@ func (s *Storage) MailList(user, email, folder string, frame common.Frame) ([]*c
 	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
 
 	request := bson.A{
-		bson.M{"$match": bson.M{"email": email}},
+		bson.M{"$match": bson.M{"email": email, "folder": folder}},
 		bson.M{"$sort": bson.M{"mail.header.date": 1}},
 	}
 
@@ -297,7 +297,9 @@ func (s *Storage) MailList(user, email, folder string, frame common.Frame) ([]*c
 		request = append(request, bson.M{"$skip": frame.Skip})
 	}
 
+	fmt.Printf("Trying limit number of mails: %v\n", frame)
 	if frame.Limit > 0 {
+		fmt.Printf("Limit number of mails: %v\n", frame)
 		request = append(request, bson.M{"$limit": frame.Limit})
 	}
 
@@ -329,7 +331,7 @@ func (s *Storage) GetUserInfo(user string) (*common.UserInfo, error) {
 	return result, err
 }
 
-func (s *Storage) GetEmailStats(user string, email string) (unread, total int, err error) {
+func (s *Storage) GetEmailStats(user string, email string, folder string) (unread, total int, err error) {
 	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
 	result := &struct {
 		Total  int
@@ -417,4 +419,13 @@ func (s *Storage) GetAllEmails() (emails []string, err error) {
 		}
 	}
 	return nil, err
+}
+
+func (s *Storage) GetFolders(email string) (folders []*common.Folder) {
+	folders = []*common.Folder{
+		&common.Folder{Name: "Inbox", Custom: false},
+		&common.Folder{Name: "Trash", Custom: false},
+		&common.Folder{Name: "Spam", Custom: false},
+	}
+	return
 }

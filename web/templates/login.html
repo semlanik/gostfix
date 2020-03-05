@@ -10,25 +10,27 @@
         <title>Gostfix mail {{.Version}}</title>
     </head>
     <body>
-        <div style="width: 100%; height: 100%; display:flex; justify-content: center; align-items: center;">
-            <div>
-                <form method="POST" action="/login">
-                    <div class="inpt">
-                        <input name="user" type="text" required>
-                        <span class="highlight"></span>
-                        <span class="bar"></span>
-                        <label>Email</label>
-                    </div>
-                    <div class="inpt">
-                        <input name="password" type="password" required>
-                        <span class="highlight"></span>
-                        <span class="bar"></span>
-                        <label>Password</label>
-                    </div>
-                    <input type="submit" style="visibility: hidden;" />
-                </form>
+        <div id="main">
+            <div class="horizontalPaddingBox" >
+                <div style="display: flex; width: 100%; height: 100%; justify-content: center;">
+                    <form method="POST" action="/login" style="margin: auto;">
+                        <div class="inpt">
+                            <input name="user" type="text" required>
+                            <span class="highlight"></span>
+                            <span class="bar"></span>
+                            <label>Email</label>
+                        </div>
+                        <div class="inpt">
+                            <input name="password" type="password" required>
+                            <span class="highlight"></span>
+                            <span class="bar"></span>
+                            <label>Password</label>
+                        </div>
+                        <input type="submit" style="visibility: hidden;" />
+                    </form>
+                </div>
             </div>
+            <div id="copyrightBox">gostfix {{.Version}} Web interface. Copyright (c) 2020 Alexey Edelev &lt;semlanik@gmail.com&gt;</div>
         </div>
-        <p class="copyrights">gostfix {{.Version}} Web interface. Copyright (c) 2020 Alexey Edelev &lt;semlanik@gmail.com&gt;</p>
     </body>
 </html>

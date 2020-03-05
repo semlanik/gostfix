@@ -29,6 +29,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"log"
 	"os"
 	"strings"
@@ -156,12 +157,12 @@ func (pd *parseData) parseHeader(headerRaw string) {
 			pd.previousHeader = &pd.email.Header.Subject
 		case "date":
 			pd.previousHeader = nil
-			time, err := time.Parse(time.RFC1123Z, strings.Trim(capture[2], " \t"))
+			unixTime, err := parseDate(strings.Trim(capture[2], " \t"))
 			if err == nil {
-				pd.email.Header.Date = time.Unix()
+				pd.email.Header.Date = unixTime
 				pd.mandatoryHeaders |= DateHeaderMask
 			} else {
-				log.Printf("Invalid date format %s, %s", strings.Trim(capture[2], " \t"), err)
+				log.Printf("Unable to parse message: %s\n", err)
 			}
 		case "content-type":
 			pd.previousHeader = &pd.bodyContentType
@@ -211,4 +212,17 @@ func (pd *parseData) parseBody() {
 		})
 		attachmentFile.Write(attachment.Content)
 	}
+}
+
+func parseDate(stringDate string) (int64, error) {
+	formatsToTest := []string{"Mon, _2 Jan 2006 15:04:05 -0700", time.RFC1123Z, time.RFC1123, time.UnixDate}
+	var err error
+	for _, format := range formatsToTest {
+		dateTime, err := time.Parse(format, stringDate)
+		if err == nil {
+			return dateTime.Unix(), nil
+		}
+	}
+
+	return 0, errors.New("Invalid date format " + stringDate + " , " + err.Error())
 }

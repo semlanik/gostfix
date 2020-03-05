@@ -42,3 +42,8 @@ message Frame {
 	sint32 skip = 1;
 	sint32 limit = 2;
 }
+
+message Folder {
+	string name = 1;
+	bool custom = 2;
+}

@@ -2,84 +2,53 @@
     font-family: 'Titillium Web';
 }
 
+:root {
+    --primary-color: #41cd52;
+    --primary-dark-color: #3ab849;
+    --secondary-color: #ebffee;
+    --secondary-dark-color: #b8d4bc;
+    --bg-color: #ffffff;
+    --primary-text-color: #000000;
+    --primary-text-dark-color: #000000;
+    --secondary-text-color: #ffffff;
+    --secondary-text-dark-color: #ffffff;
+    --default-radius: 3pt;
+
+    --base-text-padding: 10pt;
+}
+
 body {
-    background-color: white;
+    background-color: var(--bg-color);
 }
 
-table.mailList {
-    width: 100%;
-    table-layout: fixed;
-}
-
-.mailList td {
-    padding: 10pt;
-}
-
-.mailList tr:last-child {
-    border-bottom: 0;
-}
-
-.mailList tr {
-    background-color: #ffffff;
-    border-bottom: 1px solid #41cd52;
+.mailHeader {
+    background-color: var(--bg-color);
+    border-bottom: 1px solid var(--primary-color);
     cursor: pointer;
     transition: background-color .3s;
 }
 
-.mailList tr:hover {
-    background-color: #ebffee;
-}
-
-td.fromCol {
-    width: 300pt;
-}
-
-td.subjCol {
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-td.dateCol {
-    width: 100pt;
-    overflow: hidden;
-    text-overflow:ellipsis;
-    white-space: nowrap;
-}
-
-tr.read {
-    font-weight: normal;
-}
-
-tr.unread {
-    font-weight: bold;
+.mailHeader:hover {
+    background-color: var(--secondary-color);
 }
 
 .materialLevel1 {
+    overflow: hidden;
     box-shadow: 0 1pt 3pt rgba(0, 0, 0, .6);
-    margin-top: 1pt;
-    margin-bottom: 1pt;
-    margin-left: 4pt;
-    margin-right: 4pt;
-    border-radius: 3pt;
+    border-radius: var(--default-radius);
 }
 
 .materialLevel2 {
     box-shadow: 0 2pt 6pt rgba(0, 0, 0, .6);
-    margin-top: 1pt;
-    margin-bottom: 1pt;
-    margin-left: 5pt;
-    margin-right: 5pt;
-    border-radius: 3pt;
+    border-radius: var(--default-radius);
 }
 
 .copyrights {
-    color: #b8d4bc
+    color: var(--secondary-dark-color);
 }
 
 .primaryText {
-    color: black;
+    color: var(--primary-text-color);
     font-weight: bold;
     font-size: 12pt;
 }
@@ -90,9 +59,24 @@ tr.unread {
     font-size: 10pt;
 }
 
-.mailBody {
-    border-radius: 3pt;
+#mailBody {
+    border-radius: var(--default-radius);
     border-width: 1pt;
     border-style: solid;
-    border-color: #41cd52;
+    border-color: var(--primary-color);
+    padding: 5pt;
+}
+
+.read {
+    font-weight: normal;
+}
+
+.unread {
+    font-weight: bold;
+}
+
+.iconBtn {
+}
+
+.iconBtn:hover {
 }

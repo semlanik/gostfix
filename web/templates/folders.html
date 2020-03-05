@@ -1,5 +1,3 @@
-<div>
-    {{range .}}
-    <div class="folderBtn">{{.}}</div>
-    {{end}}
-</div>
+{{range .}}
+<div class="folderBtn" onclick="openFolder('{{.Name}}')">{{.Name}}</div>
+{{end}}

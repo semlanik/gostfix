@@ -23,19 +23,20 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-var detailsUrl = "details/"
+var currentFolder = ""
+var currentPage = 0
+var currentMail = ""
 var updateTimerId = null
-var updateInterval = 5000
+var updateInterval = 50000
 var mailbox = ""
-var mailboxRegex = /^(\/m\d+)/g
+var pageMax = 10
+const mailboxRegex = /^(\/m\d+)/g
 
 $(document).ready(function(){
     $.ajaxSetup({
         global: false,
         type: "POST"
     })
-    $(window).bind('hashchange', requestDetails)
-    requestDetails()
 
     urlPaths = mailboxRegex.exec($(location).attr('pathname'))
     if (urlPaths != null && urlPaths.length === 2) {
@@ -44,41 +45,77 @@ $(document).ready(function(){
         mailbox = ""
     }
 
+    $(window).bind('hashchange', onHashChanged)
+    onHashChanged()
     loadFolders()
     loadStatusLine()
-    updateMailList()
-    if(mailbox != "") {
+
+    if (mailbox != "") {
         clearInterval(updateTimerId)
-        updateTimerId = setInterval(updateMailList, updateInterval)
+        updateTimerId = setInterval(updateMailList, updateInterval, currentFolder+currentPage)
     }
 })
 
 function openEmail(id) {
-    window.location.hash = detailsUrl + id
+    window.location.hash = currentFolder + currentPage + "/" + id
 }
 
-function requestDetails() {
+function openFolder(folder) {
+    window.location.hash = folder
+}
+
+function onHashChanged() {
     var hashLocation = window.location.hash
-    if (hashLocation.startsWith("#" + detailsUrl)) {
-        var mailId = hashLocation.replace(/^#details\//, "")
-        if (mailId != "") {
-            $.ajax({
-                url: "/mail",
-                data: {mailId: mailId},
-                success: function(result) {
-                    $("#mail"+mailId).removeClass("unread")
-                    $("#mail"+mailId).addClass("read")
-                    $("#details").html(result);
-                    setDetailsVisible(true);
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    $("#details").html(textStatus)
-                    setDetailsVisible(true)
-                }
-            })
+    if (hashLocation == "") {
+        setDetailsVisible(false)
+        openFolder("Inbox")
+        return
+    }
+
+    hashRegex = /^#([a-zA-Z]+)(\d*)\/?([A-Fa-f\d]*)/g
+    hashParts = hashRegex.exec(hashLocation)
+    console.log("Hash parts: " + hashParts)
+    page = 0
+    if (hashParts.length >= 3 && hashParts[2] != "") {
+        console.log("page found: " + hashParts[2])
+        page = hashParts[2]
+    }
+
+    if (hashParts.length >= 2 && (hashParts[1] != currentFolder || currentPage != page) && hashParts[1] != "") {
+
+        updateMailList(hashParts[1], page)
+    }
+
+    if (hashParts.length >= 4 && hashParts[3] != "") {
+        if (currentMail != hashParts[3]) {
+            requestMail(hashParts[3])
         }
     } else {
         setDetailsVisible(false)
+    }
+
+
+}
+
+function requestMail(mailId) {
+    if (mailId != "") {
+        $.ajax({
+            url: "/mail",
+            data: {
+                mailId: mailId
+            },
+            success: function(result) {
+                currentMail = mailId
+                $("#mail"+mailId).removeClass("unread")
+                $("#mail"+mailId).addClass("read")
+                $("#mailDetails").html(result);
+                setDetailsVisible(true);
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                $("#mailDetails").html(textStatus)
+                setDetailsVisible(true)
+            }
+        })
     }
 }
 
@@ -100,7 +137,7 @@ function loadFolders() {
 }
 
 function closeDetails() {
-    window.location.hash = ""
+    window.location.hash = currentFolder + currentPage
 }
 
 function loadStatusLine() {
@@ -180,20 +217,21 @@ function removeMail(mailId) {
 
 function setDetailsVisible(visible) {
     if (visible) {
-        $("#details").show()
+        $("#mailDetails").show()
         $("#mailList").css({pointerEvents: "none"})
         clearInterval(updateTimerId)
     } else {
-        $("#details").hide()
-        $("#details").html("")
+        currentMail = ""
+        $("#mailDetails").hide()
+        $("#mailDetails").html("")
         $("#mailList").css({pointerEvents: "auto"})
-        updateTimerId = setInterval(updateMailList, updateInterval)
+        updateTimerId = setInterval(updateMailList, updateInterval, currentFolder+currentPage)
     }
 }
 
-function updateMailList() {
-    if (mailbox == "") {
-        if($("#mailList")) {
+function updateMailList(folder, page) {
+    if (mailbox == "" || folder == "") {
+        if ($("#mailList")) {
             $("#mailList").html("Unable to load message list")
         }
         return
@@ -201,16 +239,33 @@ function updateMailList() {
 
     $.ajax({
         url: mailbox + "/mailList",
+        data: {
+            folder: folder,
+            page: page
+        },
         success: function(result) {
-            if($("#mailList")) {
-                // console.log("result: " + result)
-                $("#mailList").html(result)
+            var data = jQuery.parseJSON(result)
+            var mailCount = data.total
+            if ($("#mailList")) {
+                $("#mailList").html(data.html)
             }
+            currentFolder = folder
+            currentPage = page
         },
         error: function(jqXHR, textStatus, errorThrown) {
-            if($("#mailList")) {
-                $("#mailList").html(textStatus)
+            if ($("#mailList")) {
+                $("#mailList").html("Unable to load message list")
             }
         }
     })
+}
+
+function nextPage() {
+    var newPage = currentPage > 0 ? currentPage - 1 : 0
+    window.location.hash = currentFolder + newPage
+}
+
+function prevPage() {
+    var newPage = currentPage < (pageMax - 1) ? currentPage + 1 : pageMax
+    window.location.hash = currentFolder + newPage
 }

@@ -1,17 +1,9 @@
-<div class="scrollable">
-    <div class="fadeIn" style="position: absolute; top: 5pt; left: 0; right: 0; height: 10pt"></div>
-    <table class="mailList">
-        <tbody>
-            {{range .}}
-            <tr id="mail{{.Id}}" class="{{if .Read}}read{{else}}unread{{end}}" onclick="openEmail('{{.Id}}');">
-                <td class="fromCol">{{.Mail.Header.From}}</td>
-                <td class="subjCol">{{.Mail.Header.Subject}}</td>
-                <td id="mailDate{{.Id}}" class="dateCol" onload="$('#mailDate{{.Id}}').html(localDate({{.Mail.Header.Date}}))"></td>
-            </tr>
-            {{else}}
-            <tr><td><b>Mail folder is empty</b></td></tr>
-            {{end}}
-        </tbody>
-    </table>
-    <div class="fadeOut" style="position: absolute; bottom: 5pt; left: 0; right: 0; height:10pt"></div>
+<!-- <div class="fadeIn" style="position: absolute; top: 5pt; left: 0; right: 0; height: 10pt"></div> -->
+{{range .}}
+<div id="mail{{.Id}}" class="mailHeader {{if .Read}}read{{else}}unread{{end}}" onclick="openEmail('{{.Id}}');">
+    <div class="mailFrom">{{.Mail.Header.From}}</div>
+    <div class="mailSubject">{{.Mail.Header.Subject}}</div>
+    <div id="mailDate{{.Id}}" class="mailDate" onload="$('#mailDate{{.Id}}').html(localDate({{.Mail.Header.Date}}))">{{.Mail.Header.Subject}}</div>
 </div>
+{{end}}
+<!-- <div class="fadeOut" style="position: absolute; bottom: 5pt; left: 0; right: 0; height:10pt"></div> -->

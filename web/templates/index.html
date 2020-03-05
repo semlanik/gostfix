@@ -11,16 +11,23 @@
         <title>Gostfix mail {{.Version}}</title>
     </head>
     <body>
-        <div class="main">
-            <div class="foldersBox">
-                <div class="btn materialLevel1" style="width: 110pt">New email</div>
-                <div id="folders"></div>
-            </div>
+        <div id="main">
             <div id="statusLine"></div>
-            <div id="mailList" class="materialLevel1 contentBox"></div>
-            <div id="details" class="materialLevel2 contentBox emailDetails" style="display: none;">
+            <div class="horizontalPaddingBox">
+                <div id="contentBox">
+                    <div id="foldersBox">
+                        <div class="btn materialLevel1" style="margin: 5pt;">New email</div>
+                        <div id="folders"></div>
+                    </div>
+                    <div class="verticalPaddingBox">
+                        <div id="mailInnerBox" class="materialLevel1">
+                            <div id="mailList"></div>
+                            <div id="mailDetails"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
+            <div id="copyrightBox">gostfix {{.Version}} Web interface. Copyright (c) 2020 Alexey Edelev &lt;semlanik@gmail.com&gt;</div>
         </div>
-        <p class="copyrights">gostfix {{.Version}} Web interface. Copyright (c) 2020 Alexey Edelev &lt;semlanik@gmail.com&gt;</p>
     </body>
 </html>

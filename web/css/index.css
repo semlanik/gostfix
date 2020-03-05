@@ -1,78 +1,143 @@
 html, body {
-    height: 100%;
-    margin: 0px;
+    top: 0;
+    left: 0;
+    right: 0;
+    left: 0;
+    margin: 0;
 }
 
-table {
-    border-collapse: collapse;
-    border-spacing: 0;
-}
-
-.main {
+#main {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    margin-bottom: 30pt!important;
-}
+    margin: 0;
 
-.contentBox {
-    position: absolute;
-    top: 40pt;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    padding: 5pt;
 
-    margin-left: 150pt!important;
-    margin-top: 5pt!important;
-    margin-right: 15pt!important;
-
-    padding: 5pt
-}
-
-.emailDetails {
-    background-color: white;
-    margin-left: 158pt!important;
-    margin-top: 13pt!important;
-    margin-bottom: -8pt!important;
-    margin-right: 8pt!important;
-    padding: 10pt;
-}
-
-.foldersBox {
-    position: absolute;
-    top :0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-
-    margin-left: 2pt!important;
-    margin-top: 5pt!important;
-    margin-right: 5pt!important;
-    margin-bottom: 30pt!important;
-
-    overflow-y: auto;
-    width: 150pt;
+    display: flex;
+    flex-direction: column;
 }
 
 #statusLine {
-    position: absolute;
-    top: 0;
-    font-size: 16pt;
-    left: 150pt;
-    height: 40pt;
-    padding: 5pt
+    flex: 0 1 auto;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    padding: var(--base-text-padding);
 }
 
-.copyrights {
+#contentBox {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 100%;
+}
+
+#foldersBox {
+    display: block;
+    width: 150pt;
+    max-width: 150pt;
+    min-width: 150pt;
+    height: 100%;
+    max-height: 100%;
+    background-color: honeydew;
+}
+
+#mailInnerBox {
+    position: relative;
+    max-width: 100%;
+    max-height: 100%;
+    width: 100%;
+    height: 100%;
+}
+
+#mailList {
     position: absolute;
-    right: 0;
+    top: 5pt;
+    bottom: 5pt;
+    left: 5pt;
+    right: 5pt;
+    overflow-y: auto;
+    background-color: var(--bg-color);
+}
+
+#mailDetails {
+    position: absolute;
+    top: 0;
     bottom: 0;
-    margin-right: 5pt!important;
-    margin-bottom: 5pt!important;
+    left: 0;
+    right: 0;
+
+    overflow: hidden;
+    display: none;
+    background-color: var(--bg-color);
+    padding: 5pt;
+}
+
+.mailHeader {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mailFrom {
+    display: inline-block;
+    flex: 0 1 auto;
+    min-width: 250pt;
+    max-width: 250pt;
+    width: 250pt;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    padding: var(--base-text-padding);
+}
+
+.mailSubject {
+    display: block;
+    flex: 1 1 auto;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 80%;
+    padding: var(--base-text-padding);
+}
+
+.mailDate {
+    display: block;
+    flex: 0 1 auto;
+    width: 100pt;
+    min-width: 100pt;
+    max-width: 100pt;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: var(--base-text-padding);
+}
+
+#copyrightBox {
+    flex: 0 1 auto;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    word-wrap: none;
+    padding: var(--base-text-padding);
+    text-align: right;
+}
+
+.verticalPaddingBox {
+    display: block;
+    flex: 1 1 auto;
+    top: 0;
+    bottom: 0;
+
+    padding: 5pt;
+}
+
+.horizontalPaddingBox {
+    display: block;
+    flex: 1 1 auto;
+    left: 0;
+    right: 0;
+
+    padding: 5pt;
 }
