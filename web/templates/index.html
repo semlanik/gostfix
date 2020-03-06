@@ -12,7 +12,18 @@
     </head>
     <body>
         <div id="main">
-            <div id="statusLine"></div>
+            <div id="headerBox">
+                <div id="statusLine"></div>
+                <div id="pager">
+                    <img style="width: 20pt;" src="/assets/prev.svg" onclick="prevPage()">
+                    <div style="width: 60pt;display: flex;">
+                        <span id="currentPageIndex" style="margin:auto"></span>
+                        <span style="margin:auto">/</span>
+                        <span id="totalPageCount" style="margin:auto"></span>
+                    </div>
+                    <img style="width: 20pt;" src="/assets/next.svg" onclick="nextPage()">
+                </div>
+            </div>
             <div class="horizontalPaddingBox">
                 <div id="contentBox">
                     <div id="foldersBox">

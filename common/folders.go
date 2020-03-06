@@ -25,10 +25,8 @@
 
 package common
 
-type MailMetadata struct {
-	Id     string `bson:"_id"`
-	User   string
-	Mail   *Mail
-	Read   bool
-	Folder string
-}
+const (
+	Inbox = "Inbox"
+	Trash = "Trash"
+	Spam  = "Spam"
+)

@@ -273,7 +273,19 @@ func (s *Storage) SaveMail(email, folder string, m *common.Mail) error {
 	return nil
 }
 
-func (s *Storage) RemoveMail(user string, mailId string) error {
+func (s *Storage) MoveMail(user string, mailId string, folder string) error {
+	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
+
+	oId, err := primitive.ObjectIDFromHex(mailId)
+	if err != nil {
+		return err
+	}
+
+	_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": bson.M{"folder": folder}})
+	return err
+}
+
+func (s *Storage) DeleteMail(user string, mailId string) error {
 	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
 
 	oId, err := primitive.ObjectIDFromHex(mailId)
@@ -338,14 +350,14 @@ func (s *Storage) GetEmailStats(user string, email string, folder string) (unrea
 		Unread int
 	}{}
 
-	cur, err := mailsCollection.Aggregate(context.Background(), bson.A{bson.M{"$match": bson.M{"email": email, "read": false}}, bson.M{"$count": "unread"}})
+	cur, err := mailsCollection.Aggregate(context.Background(), bson.A{bson.M{"$match": bson.M{"email": email, "folder": folder, "read": false}}, bson.M{"$count": "unread"}})
 	if err == nil && cur.Next(context.Background()) {
 		cur.Decode(result)
 	} else {
 		return 0, 0, err
 	}
 
-	cur, err = mailsCollection.Aggregate(context.Background(), bson.A{bson.M{"$match": bson.M{"email": email}}, bson.M{"$count": "total"}})
+	cur, err = mailsCollection.Aggregate(context.Background(), bson.A{bson.M{"$match": bson.M{"email": email, "folder": folder}}, bson.M{"$count": "total"}})
 	if err == nil && cur.Next(context.Background()) {
 		cur.Decode(result)
 	} else {
@@ -423,9 +435,9 @@ func (s *Storage) GetAllEmails() (emails []string, err error) {
 
 func (s *Storage) GetFolders(email string) (folders []*common.Folder) {
 	folders = []*common.Folder{
-		&common.Folder{Name: "Inbox", Custom: false},
-		&common.Folder{Name: "Trash", Custom: false},
-		&common.Folder{Name: "Spam", Custom: false},
+		&common.Folder{Name: common.Inbox, Custom: false},
+		&common.Folder{Name: common.Trash, Custom: false},
+		&common.Folder{Name: common.Spam, Custom: false},
 	}
 	return
 }

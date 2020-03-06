@@ -199,12 +199,14 @@
 }
 
 .folderBtn {
-    padding-left: 5pt;
-    padding-top: 5pt;
-    padding-bottom: 5pt;
-    width: 100%;
+    display: flex;
+    flex-direction: row;
+    padding: 2pt;
+    left: 0;
+    right: 0;
+    margin-top: 5pt;
     border-bottom-right-radius: var(--default-radius);
-    border-bottom-left-radius: var(--default-radius);
+    border-top-right-radius: var(--default-radius);
     background-color: var(--secondary-color);
 }
 

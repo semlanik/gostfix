@@ -28,7 +28,10 @@ package web
 import (
 	"fmt"
 	template "html/template"
+	"log"
 	"net/http"
+
+	"git.semlanik.org/semlanik/gostfix/common"
 )
 
 func (s *Server) handleMailRequest(w http.ResponseWriter, r *http.Request) {
@@ -52,6 +55,8 @@ func (s *Server) handleMailRequest(w http.ResponseWriter, r *http.Request) {
 		s.handleSetRead(w, r, user, mailId)
 	case "/remove":
 		s.handleRemove(w, user, mailId)
+	case "/delete":
+		s.handleDelete(w, user, mailId)
 	}
 }
 
@@ -87,5 +92,16 @@ func (s *Server) handleSetRead(w http.ResponseWriter, r *http.Request, user, mai
 }
 
 func (s *Server) handleRemove(w http.ResponseWriter, user, mailId string) {
-	s.storage.RemoveMail(user, mailId)
+	err := s.storage.MoveMail(user, mailId, common.Trash)
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Could not move email to trash", w)
+	}
+}
+
+func (s *Server) handleDelete(w http.ResponseWriter, user, mailId string) {
+	log.Printf("Delete mail")
+	err := s.storage.DeleteMail(user, mailId)
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Could not delete email", w)
+	}
 }

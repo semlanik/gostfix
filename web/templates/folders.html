@@ -1,3 +1,3 @@
 {{range .}}
-<div class="folderBtn" onclick="openFolder('{{.Name}}')">{{.Name}}</div>
+<div id="folder{{.Name}}" class="folderBtn" onclick="openFolder('{{.Name}}')"><span style="flex: 1 1 auto;">{{.Name}}</span><span id="folderStats{{.Name}}" style="width: 40pt; min-width: 40pt; flex: 1 1 auto; text-align: right;"></span></div>
 {{end}}

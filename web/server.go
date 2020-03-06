@@ -131,6 +131,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case "/setRead":
 			fallthrough
 		case "/remove":
+			fallthrough
+		case "/delete":
 			s.handleMailRequest(w, r)
 		default:
 			http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)

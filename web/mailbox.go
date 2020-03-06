@@ -26,6 +26,7 @@
 package web
 
 import (
+	"encoding/json"
 	"fmt"
 	template "html/template"
 	"log"
@@ -36,7 +37,7 @@ import (
 )
 
 func (s *Server) handleMailbox(w http.ResponseWriter, user, email string) {
-	mailList, err := s.storage.MailList(user, email, "Inbox", common.Frame{Skip: 0, Limit: 50})
+	mailList, err := s.storage.MailList(user, email, common.Inbox, common.Frame{Skip: 0, Limit: 50})
 
 	if err != nil {
 		s.error(http.StatusInternalServerError, "Couldn't read email database", w)
@@ -77,6 +78,8 @@ func (s *Server) handleMailboxRequest(path, user string, mailbox int, w http.Res
 		s.handleMailbox(w, user, emails[mailbox])
 	case "folders":
 		s.handleFolders(w, user, emails[mailbox])
+	case "folderStat":
+		s.handleFolderStat(w, r, user, emails[mailbox])
 	case "statusLine":
 		s.handleStatusLine(w, user, emails[mailbox])
 	case "mailList":
@@ -87,16 +90,99 @@ func (s *Server) handleMailboxRequest(path, user string, mailbox int, w http.Res
 }
 
 func (s *Server) handleFolders(w http.ResponseWriter, user, email string) {
-	fmt.Fprintf(w, s.templater.ExecuteFolders(s.storage.GetFolders(email)))
+	folders := s.storage.GetFolders(email)
+
+	out, err := json.Marshal(&struct {
+		Folders []*common.Folder `json:"folders"`
+		Html    string           `json:"html"`
+	}{
+		Folders: folders,
+		Html:    s.templater.ExecuteFolders(s.storage.GetFolders(email)),
+	})
+
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Could not fetch folder list", w)
+	}
+
+	w.Write(out)
+}
+
+func (s *Server) handleFolderStat(w http.ResponseWriter, r *http.Request, user, email string) {
+	unread, total, err := s.storage.GetEmailStats(user, email, s.extractFolder(email, r))
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Couldn't read mailbox stat", w)
+		return
+	}
+
+	out, err := json.Marshal(&struct {
+		Total  int `json:"total"`
+		Unread int `json:"unread"`
+	}{
+		Total:  total,
+		Unread: unread,
+	})
+
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Couldn't parse mailbox stat", w)
+		return
+	}
+
+	w.Write(out)
 }
 
 func (s *Server) handleMailList(w http.ResponseWriter, r *http.Request, user, email string) {
-	folder := r.FormValue("folder")
+	folder := s.extractFolder(email, r)
 	page, err := strconv.Atoi(r.FormValue("page"))
+
 	if err != nil {
 		page = 0
 	}
 
+	_, total, err := s.storage.GetEmailStats(user, email, folder)
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Couldn't read email database", w)
+		return
+	}
+
+	mailList, err := s.storage.MailList(user, email, folder, common.Frame{Skip: int32(50 * page), Limit: 50})
+
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Couldn't read email database", w)
+		return
+	}
+
+	out, err := json.Marshal(&struct {
+		Total int    `json:"total"`
+		Html  string `json:"html"`
+	}{
+		Total: total,
+		Html:  s.templater.ExecuteMailList(mailList),
+	})
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Could not perform maillist", w)
+		return
+	}
+	w.Write(out)
+}
+
+func (s *Server) handleStatusLine(w http.ResponseWriter, user, email string) {
+	info, err := s.storage.GetUserInfo(user)
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Could not read user info", w)
+		return
+	}
+
+	fmt.Fprint(w, s.templater.ExecuteStatusLine(&struct {
+		Name  string
+		Email string
+	}{
+		Name:  info.FullName,
+		Email: email,
+	}))
+}
+
+func (s *Server) extractFolder(email string, r *http.Request) string {
+	folder := r.FormValue("folder")
 	folders := s.storage.GetFolders(email)
 	ok := false
 	for _, existFolder := range folders {
@@ -107,38 +193,8 @@ func (s *Server) handleMailList(w http.ResponseWriter, r *http.Request, user, em
 	}
 
 	if !ok {
-		folder = "Inbox"
-	}
-	_, total, err := s.storage.GetEmailStats(user, email, folder)
-	mailList, err := s.storage.MailList(user, email, folder, common.Frame{Skip: int32(50 * page), Limit: 50})
-
-	if err != nil {
-		s.error(http.StatusInternalServerError, "Couldn't read email database", w)
-		return
+		folder = common.Inbox
 	}
 
-	out := fmt.Sprintf("{total: %d, html: \"%s\", }", total, s.templater.ExecuteMailList(mailList))
-	fmt.Fprint(w, out)
-}
-
-func (s *Server) handleStatusLine(w http.ResponseWriter, user, email string) {
-	info, err := s.storage.GetUserInfo(user)
-	if err != nil {
-		s.error(http.StatusInternalServerError, "Could not read user info", w)
-		return
-	}
-
-	// unread, total, err := s.storage.GetEmailStats(user, email)
-	// if err != nil {
-	// 	s.error(http.StatusInternalServerError, "Could not read user stats", w)
-	// 	return
-	// }
-
-	fmt.Fprint(w, s.templater.ExecuteStatusLine(&struct {
-		Name  string
-		Email string
-	}{
-		Name:  info.FullName,
-		Email: email,
-	}))
+	return folder
 }
