@@ -174,6 +174,7 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("logout")
 
 	session, _ := s.sessionStore.Get(r, CookieSessionToken)
+	s.storage.RemoveToken(session.Values["user"].(string), session.Values["token"].(string))
 	session.Values["user"] = ""
 	session.Values["token"] = ""
 	session.Save(r, w)
