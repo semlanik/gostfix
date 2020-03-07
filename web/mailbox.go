@@ -26,12 +26,15 @@
 package web
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	template "html/template"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	common "git.semlanik.org/semlanik/gostfix/common"
 )
@@ -172,12 +175,15 @@ func (s *Server) handleStatusLine(w http.ResponseWriter, user, email string) {
 		return
 	}
 
+	emailHash := md5.Sum([]byte(strings.Trim(email, "\t ")))
 	fmt.Fprint(w, s.templater.ExecuteStatusLine(&struct {
-		Name  string
-		Email string
+		Name      string
+		Email     string
+		EmailHash string
 	}{
-		Name:  info.FullName,
-		Email: email,
+		Name:      info.FullName,
+		Email:     email,
+		EmailHash: hex.EncodeToString(emailHash[:]),
 	}))
 }
 
