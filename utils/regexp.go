@@ -32,6 +32,7 @@ import (
 )
 
 const (
+	NewMailIndicator    = "^(From\\s).*"
 	HeaderRegExp        = "^([\x21-\x7E^:]+):(.*)"
 	FoldingRegExp       = "^\\s+(.*)"
 	BoundaryStartRegExp = "^--(.*)"
@@ -62,6 +63,7 @@ func RegExpUtilsInstance() *RegExpUtils {
 }
 
 type regExpUtils struct {
+	MailIndicator       *regexp.Regexp
 	DomainChecker       *regexp.Regexp
 	EmailChecker        *regexp.Regexp
 	HeaderFinder        *regexp.Regexp
@@ -73,6 +75,12 @@ type regExpUtils struct {
 }
 
 func newRegExpUtils() (*regExpUtils, error) {
+	mailIndicator, err := regexp.Compile(NewMailIndicator)
+	if err != nil {
+		log.Fatalf("Invalid regexp %s\n", err)
+		return nil, err
+	}
+
 	headerFinder, err := regexp.Compile(HeaderRegExp)
 	if err != nil {
 		log.Fatalf("Invalid regexp %s\n", err)
@@ -122,6 +130,7 @@ func newRegExpUtils() (*regExpUtils, error) {
 	}
 
 	ru := &regExpUtils{
+		MailIndicator:       mailIndicator,
 		EmailChecker:        emailChecker,
 		HeaderFinder:        headerFinder,
 		FoldingFinder:       foldingFinder,

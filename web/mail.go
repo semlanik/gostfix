@@ -67,6 +67,11 @@ func (s *Server) handleMailDetails(w http.ResponseWriter, user, mailId string) {
 		return
 	}
 
+	text := mail.Body.RichText
+	if text == "" {
+		text = mail.Body.PlainText
+	}
+
 	s.storage.SetRead(user, mailId, true)
 	fmt.Fprint(w, s.templater.ExecuteDetails(&struct {
 		From    string
@@ -79,7 +84,7 @@ func (s *Server) handleMailDetails(w http.ResponseWriter, user, mailId string) {
 		From:    mail.Header.From,
 		To:      mail.Header.To,
 		Subject: mail.Header.Subject,
-		Text:    template.HTML(mail.Body.RichText),
+		Text:    template.HTML(text),
 		MailId:  mailId,
 	}))
 }

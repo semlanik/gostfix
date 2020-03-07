@@ -30,6 +30,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -85,9 +86,20 @@ func parseFile(file *utils.LockedFile) []*common.Mail {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
+		currentText := scanner.Text()
+		if utils.RegExpUtilsInstance().MailIndicator.MatchString(currentText) {
+			if pd.mandatoryHeaders == AllHeaderMask {
+				pd.parseBody()
+				emails = append(emails, pd.email)
+			}
+			pd.reset()
+			fmt.Println("Found new email" + currentText)
+			continue
+		}
+
 		switch pd.state {
 		case StateHeaderScan:
-			if scanner.Text() == "" {
+			if currentText == "" {
 				if pd.mandatoryHeaders&AtLeastOneHeaderMask == AtLeastOneHeaderMask { //Cause we read at least one header
 					pd.previousHeader = nil
 					boundaryCapture := utils.RegExpUtilsInstance().BoundaryFinder.FindStringSubmatch(pd.bodyContentType)
@@ -99,28 +111,28 @@ func parseFile(file *utils.LockedFile) []*common.Mail {
 					pd.state = StateBodyScan
 				}
 			} else {
-				pd.parseHeader(scanner.Text())
+				pd.parseHeader(currentText)
 			}
 		case StateBodyScan:
-			if scanner.Text() == "" {
-				if pd.state == StateBodyScan && pd.activeBoundary == "" {
-					if pd.mandatoryHeaders == AllHeaderMask {
-						pd.parseBody()
-						emails = append(emails, pd.email)
-					}
-					pd.reset()
-					continue
-				}
-			}
+			// if currentText == "" {
+			// 	if pd.state == StateBodyScan && pd.activeBoundary == "" {
+			// 		if pd.mandatoryHeaders == AllHeaderMask {
+			// 			pd.parseBody()
+			// 			emails = append(emails, pd.email)
+			// 		}
+			// 		pd.reset()
+			// 		continue
+			// 	}
+			// }
 
-			if pd.activeBoundary != "" {
-				pd.bodyData += scanner.Text() + "\n"
-				capture := utils.RegExpUtilsInstance().BoundaryEndFinder.FindStringSubmatch(scanner.Text())
-				if len(capture) == 2 && pd.activeBoundary == capture[1] {
-					pd.state = StateBodyScan
-					pd.activeBoundary = ""
-				}
+			// if pd.activeBoundary != "" {
+			pd.bodyData += currentText + "\n"
+			capture := utils.RegExpUtilsInstance().BoundaryEndFinder.FindStringSubmatch(currentText)
+			if len(capture) == 2 && pd.activeBoundary == capture[1] {
+				pd.state = StateBodyScan
+				pd.activeBoundary = ""
 			}
+			// }
 		}
 	}
 
@@ -148,6 +160,11 @@ func (pd *parseData) parseHeader(headerRaw string) {
 		case "to":
 			pd.previousHeader = &pd.email.Header.To
 			pd.mandatoryHeaders |= ToHeaderMask
+		case "x-original-to":
+			if pd.email.Header.To == "" {
+				pd.previousHeader = &pd.email.Header.To
+				pd.mandatoryHeaders |= ToHeaderMask
+			}
 		case "cc":
 			pd.previousHeader = &pd.email.Header.Cc
 		case "bcc":
@@ -215,7 +232,13 @@ func (pd *parseData) parseBody() {
 }
 
 func parseDate(stringDate string) (int64, error) {
-	formatsToTest := []string{"Mon, _2 Jan 2006 15:04:05 -0700", time.RFC1123Z, time.RFC1123, time.UnixDate}
+	formatsToTest := []string{
+		"Mon, _2 Jan 2006 15:04:05 -0700",
+		time.RFC1123Z,
+		time.RFC1123,
+		time.UnixDate,
+		"Mon,  _2 Jan 2006 15:04:05 -0700 (MST)",
+		"Mon, _2 Jan 2006 15:04:05 -0700 (MST)"}
 	var err error
 	for _, format := range formatsToTest {
 		dateTime, err := time.Parse(format, stringDate)

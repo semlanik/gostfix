@@ -302,7 +302,7 @@ func (s *Storage) MailList(user, email, folder string, frame common.Frame) ([]*c
 
 	request := bson.A{
 		bson.M{"$match": bson.M{"email": email, "folder": folder}},
-		bson.M{"$sort": bson.M{"mail.header.date": 1}},
+		bson.M{"$sort": bson.M{"mail.header.date": -1}},
 	}
 
 	if frame.Skip > 0 {

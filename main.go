@@ -26,7 +26,7 @@
 package main
 
 import (
-	"git.semlanik.org/semlanik/gostfix/db"
+	sasl "git.semlanik.org/semlanik/gostfix/sasl"
 	scanner "git.semlanik.org/semlanik/gostfix/scanner"
 	web "git.semlanik.org/semlanik/gostfix/web"
 )
@@ -34,12 +34,14 @@ import (
 type GofixEngine struct {
 	scanner *scanner.MailScanner
 	web     *web.Server
+	sasl    *sasl.SaslServer
 }
 
 func NewGofixEngine() (e *GofixEngine) {
 	e = &GofixEngine{
 		scanner: scanner.NewMailScanner(),
 		web:     web.NewServer(),
+		sasl:    sasl.NewSaslServer(),
 	}
 
 	return
@@ -47,21 +49,22 @@ func NewGofixEngine() (e *GofixEngine) {
 
 func (e *GofixEngine) Run() {
 	defer e.scanner.Stop()
+	e.sasl.Run()
 	e.scanner.Run()
 	e.web.Run()
 }
 
 func main() {
 	//Bad
-	storage, _ := db.NewStorage()
-	storage.AddUser("semlanik@semlanik.org", "test", "Alexey Edelev")
-	storage.AddUser("junkmail@semlanik.org", "test", "Alexey Edelev")
-	storage.AddUser("git@semlanik.org", "test", "Alexey Edelev")
-	storage.AddEmail("semlanik@semlanik.org", "ci@semlanik.org")
-	storage.AddEmail("semlanik@semlanik.org", "shopping@semlanik.org")
-	storage.AddEmail("semlanik@semlanik.org", "junkmail@semlanik.org")
-	storage.AddEmail("junkmail@semlanik.org", "qqqqq@semlanik.org")
-	storage.AddEmail("junkmail@semlanik.org", "main@semlanik.org")
+	// storage, _ := db.NewStorage()
+	// storage.AddUser("semlanik@semlanik.org", "test", "Alexey Edelev")
+	// storage.AddUser("junkmail@semlanik.org", "test", "Alexey Edelev")
+	// storage.AddUser("git@semlanik.org", "test", "Alexey Edelev")
+	// storage.AddEmail("semlanik@semlanik.org", "ci@semlanik.org")
+	// storage.AddEmail("semlanik@semlanik.org", "shopping@semlanik.org")
+	// storage.AddEmail("semlanik@semlanik.org", "junkmail@semlanik.org")
+	// storage.AddEmail("junkmail@semlanik.org", "qqqqq@semlanik.org")
+	// storage.AddEmail("junkmail@semlanik.org", "main@semlanik.org")
 	engine := NewGofixEngine()
 	engine.Run()
 }
