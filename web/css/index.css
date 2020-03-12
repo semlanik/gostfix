@@ -27,11 +27,13 @@ html, body {
 }
 
 #statusLine {
+    display: flex;
     flex: 1 1 auto;
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
     padding: var(--base-text-padding);
+    min-height: 50pt;
 }
 
 #pager {

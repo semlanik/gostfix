@@ -175,15 +175,39 @@ func (s *Server) handleStatusLine(w http.ResponseWriter, user, email string) {
 		return
 	}
 
+	type EmailIndexes struct {
+		Index int
+		Email string
+	}
+	emails, err := s.storage.GetEmails(user)
+	emailsIndexes := []EmailIndexes{}
+
+	k := 0
+	for i, existingEmail := range emails {
+		emailsIndexes = append(emailsIndexes, EmailIndexes{i, existingEmail})
+
+		if existingEmail == email {
+			k = i
+		}
+	}
+
+	emailsIndexes = emailsIndexes[:k+copy(emailsIndexes[k:], emailsIndexes[k+1:])]
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Could not read user info", w)
+		return
+	}
+
 	emailHash := md5.Sum([]byte(strings.Trim(email, "\t ")))
 	fmt.Fprint(w, s.templater.ExecuteStatusLine(&struct {
-		Name      string
-		Email     string
-		EmailHash string
+		Name          string
+		Email         string
+		EmailHash     string
+		EmailsIndexes []EmailIndexes
 	}{
-		Name:      info.FullName,
-		Email:     email,
-		EmailHash: hex.EncodeToString(emailHash[:]),
+		Name:          info.FullName,
+		Email:         email,
+		EmailHash:     hex.EncodeToString(emailHash[:]),
+		EmailsIndexes: emailsIndexes,
 	}))
 }
 

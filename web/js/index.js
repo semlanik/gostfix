@@ -33,6 +33,20 @@ var pageMax = 10
 const mailboxRegex = /^(\/m\d+)/g
 var folders = new Array()
 
+$(window).click(function(e){
+    var target = $(e.target)
+    var isDropDown = false
+    for (var i = 0; i < target.parents().length; i++) {
+        isDropDown = target.parents()[i].classList.contains("dropbtn")
+        if (isDropDown) {
+            break
+        }
+    }
+    if (!e.target.matches('.dropbtn') && !isDropDown) {
+        $(".dropdown-content").hide()
+    }
+})
+
 $(document).ready(function(){
     $.ajaxSetup({
         global: false,
@@ -308,4 +322,8 @@ function nextPage() {
 function prevPage() {
     var newPage = currentPage > 0 ? currentPage - 1 : 0
     window.location.hash = currentFolder + newPage
+}
+
+function toggleDropDown(dd) {
+    $("#"+dd).toggle()
 }

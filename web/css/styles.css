@@ -8,6 +8,7 @@
     --secondary-color: #ebffee;
     --secondary-dark-color: #b8d4bc;
     --bg-color: #ffffff;
+    --bg-dark-color: #ebffee;
     --primary-text-color: #000000;
     --primary-text-dark-color: #000000;
     --secondary-text-color: #ffffff;
@@ -79,4 +80,14 @@ body {
 }
 
 .iconBtn:hover {
+}
+
+.dropdown-content a {
+    color: var(--primary-text-color);
+    background-color: var(--bg-color);
+    transition: background-color .3s;
+}
+
+.dropdown-content a:hover, a:focus {
+    background-color: var(--bg-dark-color);
 }

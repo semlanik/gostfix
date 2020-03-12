@@ -1,9 +1,9 @@
 <!-- <div class="fadeIn" style="position: absolute; top: 5pt; left: 0; right: 0; height: 10pt"></div> -->
 {{range .}}
-<div id="mail{{.Id}}" class="mailHeader {{if .Read}}read{{else}}unread{{end}}" onclick="openEmail('{{.Id}}');">
-    <div class="mailFrom">{{.Mail.Header.From}}</div>
-    <div class="mailSubject">{{.Mail.Header.Subject}}</div>
-    <div id="mailDate{{.Id}}" class="mailDate" onload="$('#mailDate{{.Id}}').html(localDate({{.Mail.Header.Date}}))">{{.Mail.Header.Subject}}</div>
+<div id="mail{{.Id}}" class="mailHeader noselect {{if .Read}}read{{else}}unread{{end}}" onclick="openEmail('{{.Id}}');">
+    <div class="mailFrom noselect">{{.Mail.Header.From}}</div>
+    <div class="mailSubject noselect">{{.Mail.Header.Subject}}</div>
+    <div id="mailDate{{.Id}}" class="mailDate noselect" onload="$('#mailDate{{.Id}}').html(localDate({{.Mail.Header.Date}}))">{{.Mail.Header.Subject}}</div>
 </div>
 {{end}}
 <!-- <div class="fadeOut" style="position: absolute; bottom: 5pt; left: 0; right: 0; height:10pt"></div> -->
