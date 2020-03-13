@@ -91,7 +91,8 @@ func (s *Server) handleMailDetails(w http.ResponseWriter, user, mailId string) {
 		Text:    template.HTML(text),
 		MailId:  mailId,
 		Read:    false,
-		Trash:   mail.Trash,
+		Trash: mail.Trash ||
+			mail.Folder == common.Trash, //TODO: Legacy for old databases remove soon
 	}))
 }
 
@@ -110,7 +111,7 @@ func (s *Server) handleRemove(w http.ResponseWriter, user, mailId string) {
 }
 
 func (s *Server) handleRestore(w http.ResponseWriter, user, mailId string) {
-	err := s.storage.RestoreMail(user, mailId, common.Trash)
+	err := s.storage.RestoreMail(user, mailId)
 	if err != nil {
 		s.error(http.StatusInternalServerError, "Could not move email to trash", w)
 	}

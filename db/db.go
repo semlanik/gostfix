@@ -342,12 +342,18 @@ func (s *Storage) MoveMail(user string, mailId string, folder string) error {
 	return err
 }
 
-func (s *Storage) RestoreMail(user string, mailId string, folder string) error {
+func (s *Storage) RestoreMail(user string, mailId string) error {
 	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
 
 	oId, err := primitive.ObjectIDFromHex(mailId)
 	if err != nil {
 		return err
+	}
+
+	//TODO: Legacy for old databases remove soon
+	metadata, err := s.GetMail(user, mailId)
+	if metadata.Folder == common.Trash {
+		_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": bson.M{"folder": common.Inbox}})
 	}
 
 	_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": bson.M{"trash": false}})
@@ -373,13 +379,13 @@ func (s *Storage) GetMailList(user, email, folder string, frame common.Frame) ([
 	if folder == common.Trash {
 		matchFilter["$or"] = bson.A{
 			bson.M{"trash": true},
-			bson.M{"folder": folder}, //legacy support
+			bson.M{"folder": folder}, //TODO: Legacy for old databases remove soon
 		}
 	} else {
 		matchFilter["folder"] = folder
 		matchFilter["$or"] = bson.A{
 			bson.M{"trash": false},
-			bson.M{"trash": bson.M{"$exists": false}}, //legacy support
+			bson.M{"trash": bson.M{"$exists": false}}, //TODO: Legacy for old databases remove soon
 		}
 	}
 
@@ -438,13 +444,13 @@ func (s *Storage) GetEmailStats(user string, email string, folder string) (unrea
 	if folder == common.Trash {
 		matchFilter["$or"] = bson.A{
 			bson.M{"trash": true},
-			bson.M{"folder": folder}, //legacy support
+			bson.M{"folder": folder}, //TODO: Legacy for old databases remove soon
 		}
 	} else {
 		matchFilter["folder"] = folder
 		matchFilter["$or"] = bson.A{
 			bson.M{"trash": false},
-			bson.M{"trash": bson.M{"$exists": false}}, //legacy support
+			bson.M{"trash": bson.M{"$exists": false}}, //TODO: Legacy for old databases remove soon
 		}
 	}
 
