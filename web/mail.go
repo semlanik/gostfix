@@ -56,6 +56,8 @@ func (s *Server) handleMailRequest(w http.ResponseWriter, r *http.Request) {
 		s.handleSetRead(w, r, user, mailId)
 	case "/remove":
 		s.handleRemove(w, user, mailId)
+	case "/restore":
+		s.handleRestore(w, user, mailId)
 	case "/delete":
 		s.handleDelete(w, user, mailId)
 	}
@@ -68,9 +70,9 @@ func (s *Server) handleMailDetails(w http.ResponseWriter, user, mailId string) {
 		return
 	}
 
-	text := mail.Body.RichText
+	text := mail.Mail.Body.RichText
 	if text == "" {
-		text = strings.Replace(mail.Body.PlainText, "\n", "</br>", -1)
+		text = strings.Replace(mail.Mail.Body.PlainText, "\n", "</br>", -1)
 	}
 
 	s.storage.SetRead(user, mailId, true)
@@ -81,12 +83,15 @@ func (s *Server) handleMailDetails(w http.ResponseWriter, user, mailId string) {
 		Text    template.HTML
 		MailId  string
 		Read    bool
+		Trash   bool
 	}{
-		From:    mail.Header.From,
-		To:      mail.Header.To,
-		Subject: mail.Header.Subject,
+		From:    mail.Mail.Header.From,
+		To:      mail.Mail.Header.To,
+		Subject: mail.Mail.Header.Subject,
 		Text:    template.HTML(text),
 		MailId:  mailId,
+		Read:    false,
+		Trash:   mail.Trash,
 	}))
 }
 
@@ -99,6 +104,13 @@ func (s *Server) handleSetRead(w http.ResponseWriter, r *http.Request, user, mai
 
 func (s *Server) handleRemove(w http.ResponseWriter, user, mailId string) {
 	err := s.storage.MoveMail(user, mailId, common.Trash)
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Could not move email to trash", w)
+	}
+}
+
+func (s *Server) handleRestore(w http.ResponseWriter, user, mailId string) {
+	err := s.storage.RestoreMail(user, mailId, common.Trash)
 	if err != nil {
 		s.error(http.StatusInternalServerError, "Could not move email to trash", w)
 	}

@@ -131,6 +131,16 @@ html, body {
     padding: var(--base-text-padding);
 }
 
+.mailControlPanel {
+    position: absolute;
+    min-width: 100pt;
+    top: 0pt;
+    right: 0pt;
+    bottom: 1pt;
+    z-index: 2;
+    display: none;
+}
+
 #copyrightBox {
     flex: 0 1 auto;
     text-overflow: ellipsis;

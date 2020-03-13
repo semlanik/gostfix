@@ -222,11 +222,17 @@ function setRead(mailId, read) {
                 if ($("#readIcon"+mailId)) {
                     $("#readIcon"+mailId).attr("src", "/assets/read.svg")
                 }
+                if ($("#readListIcon"+mailId)) {
+                    $("#readListIcon"+mailId).attr("src", "/assets/read.svg")
+                }
                 $("#mail"+mailId).removeClass("unread")
                 $("#mail"+mailId).addClass("read")
             } else {
                 if ($("#readIcon"+mailId)) {
                     $("#readIcon"+mailId).attr("src", "/assets/unread.svg")
+                }
+                if ($("#readListIcon"+mailId)) {
+                    $("#readListIcon"+mailId).attr("src", "/assets/unread.svg")
                 }
                 $("#mail"+mailId).removeClass("read")
                 $("#mail"+mailId).addClass("unread")
@@ -238,9 +244,9 @@ function setRead(mailId, read) {
     })
 }
 
-function toggleRead(mailId) {
-    if ($("#readIcon"+mailId)) {
-        setRead(mailId, $("#readIcon"+mailId).attr("src") == "/assets/unread.svg")
+function toggleRead(mailId, iconId) {
+    if ($("#"+iconId+mailId)) {
+        setRead(mailId, $("#"+iconId+mailId).attr("src") == "/assets/unread.svg")
     }
 }
 
@@ -256,6 +262,28 @@ function removeMail(mailId, callback) {
             }
             folderStat(currentFolder);//TODO: receive statistic from websocket
             folderStat("Trash");//TODO: receive statistic from websocket
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+        }
+    })
+}
+
+
+function restoreMail(mailId, callback) {
+    var url = "/restore"
+    $.ajax({
+        url: url,
+        data: {mailId: mailId},
+        success: function(result) {
+            if (currentFolder == "Trash") {
+                $("#mail"+mailId).remove();
+            }
+            if (callback) {
+                callback();
+            }
+            for (var i = 0; i < folders.length; i++) {
+                folderStat(folders[i])
+            }
         },
         error: function(jqXHR, textStatus, errorThrown) {
         }

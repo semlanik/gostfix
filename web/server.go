@@ -132,6 +132,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fallthrough
 		case "/remove":
 			fallthrough
+		case "/restore":
+			fallthrough
 		case "/delete":
 			s.handleMailRequest(w, r)
 		default:

@@ -315,11 +315,13 @@ func (s *Storage) SaveMail(email, folder string, m *common.Mail) error {
 		Mail   *common.Mail
 		Folder string
 		Read   bool
+		Trash  bool
 	}{
 		Email:  email,
 		Mail:   m,
 		Folder: folder,
 		Read:   false,
+		Trash:  false,
 	}, options.InsertOne().SetBypassDocumentValidation(true))
 	return nil
 }
@@ -332,7 +334,23 @@ func (s *Storage) MoveMail(user string, mailId string, folder string) error {
 		return err
 	}
 
-	_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": bson.M{"folder": folder}})
+	if folder == common.Trash {
+		_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": bson.M{"trash": true}})
+	} else {
+		_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": bson.M{"folder": folder, "trash": false}})
+	}
+	return err
+}
+
+func (s *Storage) RestoreMail(user string, mailId string, folder string) error {
+	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
+
+	oId, err := primitive.ObjectIDFromHex(mailId)
+	if err != nil {
+		return err
+	}
+
+	_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": bson.M{"trash": false}})
 	return err
 }
 
@@ -348,11 +366,25 @@ func (s *Storage) DeleteMail(user string, mailId string) error {
 	return err
 }
 
-func (s *Storage) MailList(user, email, folder string, frame common.Frame) ([]*common.MailMetadata, error) {
+func (s *Storage) GetMailList(user, email, folder string, frame common.Frame) ([]*common.MailMetadata, error) {
 	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
 
+	matchFilter := bson.M{"email": email}
+	if folder == common.Trash {
+		matchFilter["$or"] = bson.A{
+			bson.M{"trash": true},
+			bson.M{"folder": folder}, //legacy support
+		}
+	} else {
+		matchFilter["folder"] = folder
+		matchFilter["$or"] = bson.A{
+			bson.M{"trash": false},
+			bson.M{"trash": bson.M{"$exists": false}}, //legacy support
+		}
+	}
+
 	request := bson.A{
-		bson.M{"$match": bson.M{"email": email, "folder": folder}},
+		bson.M{"$match": matchFilter},
 		bson.M{"$sort": bson.M{"mail.header.date": -1}},
 	}
 
@@ -369,6 +401,7 @@ func (s *Storage) MailList(user, email, folder string, frame common.Frame) ([]*c
 	cur, err := mailsCollection.Aggregate(context.Background(), request)
 
 	if err != nil {
+		log.Println(err.Error())
 		return nil, err
 	}
 
@@ -401,14 +434,31 @@ func (s *Storage) GetEmailStats(user string, email string, folder string) (unrea
 		Unread int
 	}{}
 
-	cur, err := mailsCollection.Aggregate(context.Background(), bson.A{bson.M{"$match": bson.M{"email": email, "folder": folder, "read": false}}, bson.M{"$count": "unread"}})
+	matchFilter := bson.M{"email": email}
+	if folder == common.Trash {
+		matchFilter["$or"] = bson.A{
+			bson.M{"trash": true},
+			bson.M{"folder": folder}, //legacy support
+		}
+	} else {
+		matchFilter["folder"] = folder
+		matchFilter["$or"] = bson.A{
+			bson.M{"trash": false},
+			bson.M{"trash": bson.M{"$exists": false}}, //legacy support
+		}
+	}
+
+	unreadMatchFilter := matchFilter
+	unreadMatchFilter["read"] = false
+
+	cur, err := mailsCollection.Aggregate(context.Background(), bson.A{bson.M{"$match": unreadMatchFilter}, bson.M{"$count": "unread"}})
 	if err == nil && cur.Next(context.Background()) {
 		cur.Decode(result)
 	} else {
 		return 0, 0, err
 	}
 
-	cur, err = mailsCollection.Aggregate(context.Background(), bson.A{bson.M{"$match": bson.M{"email": email, "folder": folder}}, bson.M{"$count": "total"}})
+	cur, err = mailsCollection.Aggregate(context.Background(), bson.A{bson.M{"$match": matchFilter}, bson.M{"$count": "total"}})
 	if err == nil && cur.Next(context.Background()) {
 		cur.Decode(result)
 	} else {
@@ -418,7 +468,7 @@ func (s *Storage) GetEmailStats(user string, email string, folder string) (unrea
 	return result.Unread, result.Total, err
 }
 
-func (s *Storage) GetMail(user string, id string) (m *common.Mail, err error) {
+func (s *Storage) GetMail(user string, id string) (metadata *common.MailMetadata, err error) {
 	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
 
 	oId, err := primitive.ObjectIDFromHex(id)
@@ -426,17 +476,15 @@ func (s *Storage) GetMail(user string, id string) (m *common.Mail, err error) {
 		return nil, err
 	}
 
-	m = &common.Mail{}
-	result := &struct {
-		Mail *common.Mail
-	}{
-		Mail: m,
+	metadata = &common.MailMetadata{
+		Mail: &common.Mail{},
 	}
-	err = mailsCollection.FindOne(context.Background(), bson.M{"_id": oId}).Decode(result)
+
+	err = mailsCollection.FindOne(context.Background(), bson.M{"_id": oId}).Decode(metadata)
 	if err != nil {
 		return nil, err
 	}
-	return result.Mail, nil
+	return metadata, nil
 }
 
 func (s *Storage) SetRead(user string, id string, read bool) error {

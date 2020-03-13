@@ -22,14 +22,15 @@ body {
     background-color: var(--bg-color);
 }
 
-.mailHeader {
+
+.mailHeaderContainer {
     background-color: var(--bg-color);
     border-bottom: 1px solid var(--primary-color);
     cursor: pointer;
     transition: background-color .3s;
 }
 
-.mailHeader:hover {
+.mailHeaderContainer:hover {
     background-color: var(--secondary-color);
 }
 
@@ -90,4 +91,13 @@ body {
 
 .dropdown-content a:hover, a:focus {
     background-color: var(--bg-dark-color);
+}
+
+.mailControlPanel {
+    background: -moz-linear-gradient(left, rgba(0, 0, 0, 0) 0%, var(--bg-color) 20%, var(--bg-color) 100%); /* FF3.6+ */
+    background: -webkit-gradient(linear, left top, right top, color-stop(0%,rgba(0, 0, 0,0)), color-stop(90%,var(--bg-color)), color-stop(100%,var(--bg-color))); /* Chrome,Safari4+ */
+    background: -webkit-linear-gradient(left, rgba(0, 0, 0, 0) 0%, var(--bg-color) 20%, var(--bg-color) 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-linear-gradient(left, rgba(0, 0, 0, 0) 0%, var(--bg-color) 20%, var(--bg-color) 100%); /* Opera 11.10+ */
+    background: -ms-linear-gradient(left, rgba(0, 0, 0, 0) 0%, var(--bg-color) 20%, var(--bg-color) 100%); /* IE10+ */
+    background: linear-gradient(to right, rgba(0, 0, 0, 0) 0%, var(--bg-color) 20%, var(--bg-color) 100%); /* W3C */
 }

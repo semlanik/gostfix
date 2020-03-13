@@ -31,4 +31,5 @@ type MailMetadata struct {
 	Mail   *Mail
 	Read   bool
 	Folder string
+	Trash  bool
 }

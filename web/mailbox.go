@@ -40,7 +40,7 @@ import (
 )
 
 func (s *Server) handleMailbox(w http.ResponseWriter, user, email string) {
-	mailList, err := s.storage.MailList(user, email, common.Inbox, common.Frame{Skip: 0, Limit: 50})
+	mailList, err := s.storage.GetMailList(user, email, common.Inbox, common.Frame{Skip: 0, Limit: 50})
 
 	if err != nil {
 		s.error(http.StatusInternalServerError, "Couldn't read email database", w)
@@ -147,7 +147,7 @@ func (s *Server) handleMailList(w http.ResponseWriter, r *http.Request, user, em
 		return
 	}
 
-	mailList, err := s.storage.MailList(user, email, folder, common.Frame{Skip: int32(50 * page), Limit: 50})
+	mailList, err := s.storage.GetMailList(user, email, folder, common.Frame{Skip: int32(50 * page), Limit: 50})
 
 	if err != nil {
 		s.error(http.StatusInternalServerError, "Couldn't read email database", w)

@@ -1,9 +1,17 @@
 <!-- <div class="fadeIn" style="position: absolute; top: 5pt; left: 0; right: 0; height: 10pt"></div> -->
 {{range .}}
-<div id="mail{{.Id}}" class="mailHeader noselect {{if .Read}}read{{else}}unread{{end}}" onclick="openEmail('{{.Id}}');">
-    <div class="mailFrom noselect">{{.Mail.Header.From}}</div>
-    <div class="mailSubject noselect">{{.Mail.Header.Subject}}</div>
-    <div id="mailDate{{.Id}}" class="mailDate noselect" onload="$('#mailDate{{.Id}}').html(localDate({{.Mail.Header.Date}}))">{{.Mail.Header.Subject}}</div>
+<div id="mail{{.Id}}" class="mailHeaderContainer {{if .Read}}read{{else}}unread{{end}}" style="position: relative;" onmouseover="$('#mailControlPanel{{.Id}}').show()" onmouseout="$('#mailControlPanel{{.Id}}').hide()">
+    <div class="mailHeader noselect" onclick="openEmail('{{.Id}}');" >
+        <div class="mailFrom noselect">{{.Mail.Header.From}}</div>
+        <div class="mailSubject noselect">{{.Mail.Header.Subject}}</div>
+        <div id="mailDate{{.Id}}" class="mailDate noselect" onload="$('#mailDate{{.Id}}').html(localDate({{.Mail.Header.Date}}))">{{.Mail.Header.Subject}}</div>
+    </div>
+    <div id="mailControlPanel{{.Id}}" class="mailControlPanel">
+        <div style="width: 100%; height: 100%; display: flex; flex-direction: row;">
+            <img id="readListIcon{{.Id}}" class="iconBtn" style="width: 20pt; margin-left: 20pt; margin-right: 10pt;" onclick="toggleRead('{{.Id}}', 'readListIcon'); event.stopPropagation(); console.log(event); return false;" src="/assets/{{if .Read}}read{{else}}unread{{end}}.svg"/>
+            <img id="deleteListIcon" class="iconBtn" style="width: 20pt; margin-right: 10pt;" onclick="removeMail({{.Id}}, closeDetails); event.stopPropagation(); return false;" src="/assets/remove.svg"/>
+        </div>
+    </div>
 </div>
 {{end}}
 <!-- <div class="fadeOut" style="position: absolute; bottom: 5pt; left: 0; right: 0; height:10pt"></div> -->
