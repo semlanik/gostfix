@@ -196,6 +196,8 @@ func (ms *MailScanner) Run() {
 					return
 				}
 				if event.Op&fsnotify.Write == fsnotify.Write {
+					log.Println("iNotify write")
+
 					mailPath := event.Name
 					mailbox := ""
 					for k, v := range ms.emailMaps {
@@ -229,6 +231,8 @@ func (ms *MailScanner) Stop() {
 }
 
 func (ms *MailScanner) readMailFile(mailPath string) (mails []*common.Mail) {
+	log.Println("Read mail file")
+	defer log.Println("Exit read mail file")
 	if !utils.FileExists(mailPath) {
 		return nil
 	}

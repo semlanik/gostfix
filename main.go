@@ -29,6 +29,7 @@ import (
 	sasl "git.semlanik.org/semlanik/gostfix/sasl"
 	scanner "git.semlanik.org/semlanik/gostfix/scanner"
 	web "git.semlanik.org/semlanik/gostfix/web"
+	profile "github.com/pkg/profile"
 )
 
 type GofixEngine struct {
@@ -65,6 +66,7 @@ func main() {
 	// storage.AddEmail("semlanik@semlanik.org", "junkmail@semlanik.org")
 	// storage.AddEmail("junkmail@semlanik.org", "qqqqq@semlanik.org")
 	// storage.AddEmail("junkmail@semlanik.org", "main@semlanik.org")
+	defer profile.Start().Stop()
 	engine := NewGofixEngine()
 	engine.Run()
 }

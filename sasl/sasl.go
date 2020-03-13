@@ -102,7 +102,7 @@ func (s *SaslServer) handleRequest(conn net.Conn) {
 		fullbuf, err := connectionReader.ReadString('\n')
 
 		if err == io.EOF {
-			continue
+			break
 		}
 
 		if err != nil {
@@ -162,9 +162,9 @@ func (s *SaslServer) handleRequest(conn net.Conn) {
 					return
 				}
 
-				// identity := credentialList[0]
-				login := credentialList[1]
-				// password := credentialList[2]
+				// identity := string(credentialList[0])
+				login := string(credentialList[1])
+				// password := string(credentialList[2])
 				//TODO: Use auth here
 				// if login != "semlanik@semlanik.org" || password != "test" {
 				if true {

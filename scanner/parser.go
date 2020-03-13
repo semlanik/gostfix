@@ -79,6 +79,9 @@ func (pd *parseData) reset() {
 }
 
 func parseFile(file *utils.LockedFile) []*common.Mail {
+	log.Println("Parse file")
+	defer log.Println("Exit parse")
+
 	var emails []*common.Mail
 
 	pd := &parseData{}
@@ -86,6 +89,8 @@ func parseFile(file *utils.LockedFile) []*common.Mail {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
+		log.Println("Scan next line")
+
 		currentText := scanner.Text()
 		if utils.RegExpUtilsInstance().MailIndicator.MatchString(currentText) {
 			if pd.mandatoryHeaders == AllHeaderMask {

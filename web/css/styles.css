@@ -101,3 +101,7 @@ body {
     background: -ms-linear-gradient(left, rgba(0, 0, 0, 0) 0%, var(--bg-color) 20%, var(--bg-color) 100%); /* IE10+ */
     background: linear-gradient(to right, rgba(0, 0, 0, 0) 0%, var(--bg-color) 20%, var(--bg-color) 100%); /* W3C */
 }
+
+#copyrightBox {
+    color: var(--secondary-dark-color)
+}
