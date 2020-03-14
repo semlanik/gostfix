@@ -31,6 +31,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"html"
 	template "html/template"
 	"log"
 	"net/http"
@@ -229,7 +230,21 @@ func (s *Server) extractFolder(email string, r *http.Request) string {
 }
 
 func (s *Server) handleNewMail(w http.ResponseWriter, r *http.Request, user, email string) {
-	to := r.FormValue("to")
+
+	rawMail := common.Mail{
+		Header: &common.MailHeader{
+			From:    email,
+			To:      r.FormValue("to"),
+			Cc:      r.FormValue("cc"),
+			Bcc:     r.FormValue("bcc"),
+			Date:    time.Now().Unix(),
+			Subject: r.FormValue("subject"),
+		},
+		Body: &common.MailBody{
+			PlainText: html.EscapeString(r.FormValue("body")),
+		},
+	}
+
 	resultEmail := s.templater.ExecuteMail(&struct {
 		From    string
 		Subject string
@@ -237,11 +252,11 @@ func (s *Server) handleNewMail(w http.ResponseWriter, r *http.Request, user, ema
 		To      string
 		Body    template.HTML
 	}{
-		From:    email,
-		To:      to,
-		Subject: r.FormValue("subject"),
-		Date:    template.HTML(time.Now().Format(time.RFC1123Z)),
-		Body:    template.HTML(r.FormValue("body")),
+		From:    rawMail.Header.From,
+		To:      rawMail.Header.To,
+		Subject: rawMail.Header.Subject,
+		Date:    template.HTML(time.Unix(rawMail.Header.Date, 0).Format(time.RFC1123Z)),
+		Body:    template.HTML(rawMail.Body.PlainText),
 	})
 
 	host := config.ConfigInstance().MyDomain
@@ -282,7 +297,7 @@ func (s *Server) handleNewMail(w http.ResponseWriter, r *http.Request, user, ema
 		return
 	}
 
-	err = client.Rcpt(to)
+	err = client.Rcpt(rawMail.Header.To)
 	if err != nil {
 		s.error(http.StatusInternalServerError, "Unable to send message", w)
 		log.Println(err)
@@ -311,6 +326,8 @@ func (s *Server) handleNewMail(w http.ResponseWriter, r *http.Request, user, ema
 	}
 
 	client.Quit()
+
+	s.storage.SaveMail(email, common.Sent, &rawMail, true)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte{0})
 }

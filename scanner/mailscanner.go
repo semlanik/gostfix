@@ -167,7 +167,7 @@ func (ms *MailScanner) readEmailMaps() {
 
 		mails := ms.readMailFile(mailPath)
 		for _, mail := range mails {
-			ms.storage.SaveMail(mailbox, common.Inbox, mail)
+			ms.storage.SaveMail(mailbox, common.Inbox, mail, false)
 		}
 		log.Printf("New email for %s, emails read %d", mailPath, len(mails))
 
@@ -209,7 +209,7 @@ func (ms *MailScanner) Run() {
 					if mailbox != "" {
 						mails := ms.readMailFile(mailPath)
 						for _, mail := range mails {
-							ms.storage.SaveMail(mailbox, common.Inbox, mail)
+							ms.storage.SaveMail(mailbox, common.Inbox, mail, false)
 						}
 						log.Printf("New email for %s, emails read %d", mailPath, len(mails))
 					} else {

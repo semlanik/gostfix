@@ -29,4 +29,5 @@ const (
 	Inbox = "Inbox"
 	Trash = "Trash"
 	Spam  = "Spam"
+	Sent  = "Sent"
 )

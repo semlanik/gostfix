@@ -302,7 +302,7 @@ func (s *Storage) CleanupTokens(user string) {
 	_, err = s.tokensCollection.UpdateOne(context.Background(), bson.M{"user": user}, bson.M{"$set": bson.M{"token": tokensToKeep}})
 	return
 }
-func (s *Storage) SaveMail(email, folder string, m *common.Mail) error {
+func (s *Storage) SaveMail(email, folder string, m *common.Mail, read bool) error {
 	result := &struct {
 		User string
 	}{}
@@ -320,7 +320,7 @@ func (s *Storage) SaveMail(email, folder string, m *common.Mail) error {
 		Email:  email,
 		Mail:   m,
 		Folder: folder,
-		Read:   false,
+		Read:   read,
 		Trash:  false,
 	}, options.InsertOne().SetBypassDocumentValidation(true))
 	return nil
@@ -540,6 +540,7 @@ func (s *Storage) GetAllEmails() (emails []string, err error) {
 func (s *Storage) GetFolders(email string) (folders []*common.Folder) {
 	folders = []*common.Folder{
 		&common.Folder{Name: common.Inbox, Custom: false},
+		&common.Folder{Name: common.Sent, Custom: false},
 		&common.Folder{Name: common.Trash, Custom: false},
 		&common.Folder{Name: common.Spam, Custom: false},
 	}
