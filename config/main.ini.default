@@ -1,1 +1,19 @@
+# Path to postfix service configuration.
+# Usualy placed in /etc/postfix/main.cf
+# If not set cause critical error.
 postfix_config = /etc/postfix/main.cf
+
+# Address of mongo database to store service data in following
+# format:
+#     host:[port]
+# By default is localhost:27017.
+mongo_address = localhost:27017
+
+# User name to access mongo database. Empty by default.
+mongo_user =
+
+# Password to access mongo database. Empty by default.
+mongo_password =
+
+# Path to attachments storage. By dafault "./attachments".
+attachments_path = attachments
