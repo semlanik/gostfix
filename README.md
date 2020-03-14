@@ -9,3 +9,29 @@ Supported features:
 - gRPC admin interface
 - POP3 inteface
 - IMAP interface
+
+# Nginx
+
+```
+    listen 443 ssl;
+    server_name mail.example.com;
+
+    # Add proxy micro-web services
+    location / {
+        proxy_pass http://localhost:65200;
+    }
+
+    # Add web sockets proxy
+    location ~ ^/m[\d]+/notifierSubscribe$ {
+        proxy_pass http://localhost:65200;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_set_header Host $host;
+    }
+
+
+    # SSL configuration
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/privkey.pem;
+```

@@ -26,12 +26,11 @@
 var currentFolder = ""
 var currentPage = 0
 var currentMail = ""
-var updateTimerId = null
-var updateInterval = 50000
 var mailbox = ""
 var pageMax = 10
 const mailboxRegex = /^(\/m\d+)/g
 var folders = new Array()
+var notifierSocket = null
 
 $(window).click(function(e){
     var target = $(e.target)
@@ -65,11 +64,8 @@ $(document).ready(function(){
     loadFolders()
     loadStatusLine()
 
-    if (mailbox != "") {
-        clearInterval(updateTimerId)
-    }
-
     $("#mailNewButton").click(mailNew)
+    connectNotifier()
 })
 
 function mailNew(e) {
@@ -116,10 +112,8 @@ function onHashChanged() {
 
     hashParts = hashLocation.split("/")
     if (hashParts.length == 2 && hashParts[1] == "mailNew") {
-        console.log("hashParts: " + hashParts + " length" + hashParts.length + " hashParts[1] " + hashParts[1])
         setMailNewVisible(true)
     } else {
-        console.log("!hashParts: " + hashParts)
         setMailNewVisible(false)
     }
 }
@@ -312,7 +306,6 @@ function setDetailsVisible(visible) {
     if (visible) {
         $("#mailDetails").show()
         $("#mailList").css({pointerEvents: "none"})
-        clearInterval(updateTimerId)
     } else {
         currentMail = ""
         $("#mailDetails").hide()
@@ -325,7 +318,6 @@ function setMailNewVisible(visible) {
     if (visible) {
         $("#mailNew").show()
         $("#mailList").css({pointerEvents: "none"})
-        clearInterval(updateTimerId)
     } else {
         currentMail = ""
         $("#mailNew").hide()
@@ -406,3 +398,32 @@ function sendNewMail() {
 function logout() {
     window.location.href = "/logout"
 }
+
+function connectNotifier() {
+    if (notifierSocket != null) {
+        return
+    }
+
+    var protocol = "wss://"
+    if(window.location.protocol  !== "https:") {
+        protocol = "ws://"
+    }
+    notifierSocket = new WebSocket(protocol + window.location.host + mailbox + "/notifierSubscribe")
+    notifierSocket.onopen = function() {
+    };
+    notifierSocket.onmessage = function (e) {
+        for (var i = 0; i < folders.length; i++) {
+            folderStat(folders[i])
+        }
+        updateMailList(currentFolder, currentPage)
+    }
+    notifierSocket.onclose = function () {
+    }
+}
+
+window.onbeforeunload = function() {
+    if (notifierSocket != null) {
+        notifierSocket.onclose = function () {}; // disable onclose handler first
+        notifierSocket.close();
+    }
+};

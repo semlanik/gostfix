@@ -31,6 +31,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 
 	"git.semlanik.org/semlanik/gostfix/common"
 	config "git.semlanik.org/semlanik/gostfix/config"
@@ -43,18 +44,13 @@ const (
 	SignalReconfigure = iota
 )
 
-func NewEmail() *common.Mail {
-	return &common.Mail{
-		Header: &common.MailHeader{},
-		Body:   &common.MailBody{},
-	}
-}
-
 type MailScanner struct {
 	watcher       *fsnotify.Watcher
 	emailMaps     map[string]string
 	storage       *db.Storage
 	signalChannel chan int
+	notifiers     []common.Notifier
+	notifiersLock sync.Mutex
 }
 
 func NewMailScanner() (ms *MailScanner) {
@@ -83,6 +79,7 @@ func NewMailScanner() (ms *MailScanner) {
 		watcher:       watcher,
 		storage:       storage,
 		signalChannel: make(chan int),
+		notifiers:     []common.Notifier{},
 	}
 
 	return
@@ -208,13 +205,18 @@ func (ms *MailScanner) Run() {
 
 					if mailbox != "" {
 						mails := ms.readMailFile(mailPath)
+						if len(mails) > 0 {
+							ms.notifyMailboxUpdate(mailbox)
+						}
 						for _, mail := range mails {
 							ms.storage.SaveMail(mailbox, common.Inbox, mail, false)
+							ms.notifyNewMail(mailbox, *mail)
 						}
 						log.Printf("New email for %s, emails read %d", mailPath, len(mails))
 					} else {
 						log.Printf("Invalid path update triggered: %s", mailPath)
 					}
+
 				}
 			case err, ok := <-ms.watcher.Errors:
 				if !ok {
@@ -249,4 +251,28 @@ func (ms *MailScanner) readMailFile(mailPath string) (mails []*common.Mail) {
 	}
 
 	return mails
+}
+
+func (ms *MailScanner) RegisterNotifier(notifier common.Notifier) {
+	if notifier != nil {
+		ms.notifiersLock.Lock()
+		defer ms.notifiersLock.Unlock()
+		ms.notifiers = append(ms.notifiers, notifier)
+	}
+}
+
+func (ms *MailScanner) notifyNewMail(email string, mail common.Mail) {
+	ms.notifiersLock.Lock()
+	defer ms.notifiersLock.Unlock()
+	for _, notifier := range ms.notifiers {
+		notifier.NotifyNewMail(email, mail)
+	}
+}
+
+func (ms *MailScanner) notifyMailboxUpdate(email string) {
+	ms.notifiersLock.Lock()
+	defer ms.notifiersLock.Unlock()
+	for _, notifier := range ms.notifiers {
+		notifier.NotifyMaiboxUpdate(email)
+	}
 }

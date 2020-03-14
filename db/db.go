@@ -483,7 +483,7 @@ func (s *Storage) GetMail(user string, id string) (metadata *common.MailMetadata
 	}
 
 	metadata = &common.MailMetadata{
-		Mail: &common.Mail{},
+		Mail: common.NewMail(),
 	}
 
 	err = mailsCollection.FindOne(context.Background(), bson.M{"_id": oId}).Decode(metadata)

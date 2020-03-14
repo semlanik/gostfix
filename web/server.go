@@ -57,19 +57,13 @@ const (
 	CookieSessionToken = "gostfix_session"
 )
 
-func NewEmail() *common.Mail {
-	return &common.Mail{
-		Header: &common.MailHeader{},
-		Body:   &common.MailBody{},
-	}
-}
-
 type Server struct {
 	authenticator *auth.Authenticator
 	fileServer    http.Handler
 	templater     *Templater
 	sessionStore  *sessions.CookieStore
 	storage       *db.Storage
+	Notifier      *webNotifier
 }
 
 func NewServer() *Server {
@@ -87,6 +81,7 @@ func NewServer() *Server {
 		fileServer:    http.FileServer(http.Dir("data")),
 		sessionStore:  sessions.NewCookieStore(make([]byte, 32)),
 		storage:       storage,
+		Notifier:      NewWebNotifier(),
 	}
 
 	return s

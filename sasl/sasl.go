@@ -110,7 +110,8 @@ func (s *SaslServer) handleRequest(conn net.Conn) {
 		}
 
 		if err != nil {
-			fmt.Printf("Read error %s\n", err)
+			log.Printf("Read error %s\n", err)
+			break
 		}
 
 		currentMessage := fullbuf

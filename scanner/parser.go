@@ -36,6 +36,8 @@ import (
 	"strings"
 	"time"
 
+	"net/mail"
+
 	"git.semlanik.org/semlanik/gostfix/common"
 	"git.semlanik.org/semlanik/gostfix/config"
 	utils "git.semlanik.org/semlanik/gostfix/utils"
@@ -71,7 +73,7 @@ func (pd *parseData) reset() {
 		state:            StateHeaderScan,
 		previousHeader:   nil,
 		mandatoryHeaders: 0,
-		email:            NewEmail(),
+		email:            common.NewMail(),
 		bodyContentType:  "plain/text",
 		bodyData:         "",
 		activeBoundary:   "",
@@ -179,9 +181,10 @@ func (pd *parseData) parseHeader(headerRaw string) {
 			pd.previousHeader = &pd.email.Header.Subject
 		case "date":
 			pd.previousHeader = nil
-			unixTime, err := parseDate(strings.Trim(capture[2], " \t"))
+
+			unixTime, err := mail.ParseDate(strings.Trim(capture[2], " \t")) //parseDate(strings.Trim(capture[2], " \t"))
 			if err == nil {
-				pd.email.Header.Date = unixTime
+				pd.email.Header.Date = unixTime.Unix()
 				pd.mandatoryHeaders |= DateHeaderMask
 			} else {
 				log.Printf("Unable to parse message: %s\n", err)

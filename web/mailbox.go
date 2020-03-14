@@ -87,6 +87,8 @@ func (s *Server) handleMailboxRequest(path, user string, mailbox int, w http.Res
 		s.handleMailList(w, r, user, emails[mailbox])
 	case "sendNewMail":
 		s.handleNewMail(w, r, user, emails[mailbox])
+	case "notifierSubscribe":
+		s.Notifier.handleNotifierRequest(w, r, emails[mailbox])
 	default:
 		http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
 	}
@@ -231,7 +233,7 @@ func (s *Server) extractFolder(email string, r *http.Request) string {
 
 func (s *Server) handleNewMail(w http.ResponseWriter, r *http.Request, user, email string) {
 
-	rawMail := common.Mail{
+	rawMail := &common.Mail{
 		Header: &common.MailHeader{
 			From:    email,
 			To:      r.FormValue("to"),
@@ -327,7 +329,7 @@ func (s *Server) handleNewMail(w http.ResponseWriter, r *http.Request, user, ema
 
 	client.Quit()
 
-	s.storage.SaveMail(email, common.Sent, &rawMail, true)
+	s.storage.SaveMail(email, common.Sent, rawMail, true)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte{0})
 }

@@ -25,6 +25,13 @@
 
 package common
 
+func NewMail() *Mail {
+	return &Mail{
+		Header: &MailHeader{},
+		Body:   &MailBody{},
+	}
+}
+
 type MailMetadata struct {
 	Id     string `bson:"_id"`
 	User   string
