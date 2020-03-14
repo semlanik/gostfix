@@ -68,9 +68,15 @@ $(document).ready(function(){
     if (mailbox != "") {
         clearInterval(updateTimerId)
     }
+
+    $("#mailNewButton").click(mailNew)
 })
 
-function openEmail(id) {
+function mailNew(e) {
+    window.location.hash = currentFolder + currentPage + "/mailNew"
+}
+
+function mailOpen(id) {
     window.location.hash = currentFolder + currentPage + "/" + id
 }
 
@@ -97,16 +103,24 @@ function onHashChanged() {
     }
 
     if (hashParts.length >= 2 && (hashParts[1] != currentFolder || currentPage != page) && hashParts[1] != "") {
-
         updateMailList(hashParts[1], page)
     }
 
-    if (hashParts.length >= 4 && hashParts[3] != "") {
+    if (hashParts.length >= 4 && hashParts[3] != "" && hashParts[3] != "/mailNew") {
         if (currentMail != hashParts[3]) {
             requestMail(hashParts[3])
         }
     } else {
         setDetailsVisible(false)
+    }
+
+    hashParts = hashLocation.split("/")
+    if (hashParts.length == 2 && hashParts[1] == "mailNew") {
+        console.log("hashParts: " + hashParts + " length" + hashParts.length + " hashParts[1] " + hashParts[1])
+        setMailNewVisible(true)
+    } else {
+        console.log("!hashParts: " + hashParts)
+        setMailNewVisible(false)
     }
 }
 
@@ -178,6 +192,10 @@ function folderStat(folder) {
 }
 
 function closeDetails() {
+    window.location.hash = currentFolder + currentPage
+}
+
+function closeMailNew() {
     window.location.hash = currentFolder + currentPage
 }
 
@@ -303,6 +321,18 @@ function setDetailsVisible(visible) {
     }
 }
 
+function setMailNewVisible(visible) {
+    if (visible) {
+        $("#mailNew").show()
+        $("#mailList").css({pointerEvents: "none"})
+        clearInterval(updateTimerId)
+    } else {
+        currentMail = ""
+        $("#mailNew").hide()
+        $("#mailList").css({pointerEvents: "auto"})
+    }
+}
+
 function updateMailList(folder, page) {
     if (mailbox == "" || folder == "") {
         if ($("#mailList")) {
@@ -354,4 +384,21 @@ function prevPage() {
 
 function toggleDropDown(dd) {
     $("#"+dd).toggle()
+}
+
+function sendNewMail() {
+    var formValue = $("#mailNewForm").serialize()
+    $.ajax({
+        url: mailbox + "/sendNewMail",
+        data: formValue,
+        success: function(result) {
+            $("#newMailEditor").val("")
+            $("#newMailSubject").val("")
+            $("#newMailTo").val("")
+            closeMailNew()
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            //TODO: some toast message here once implemented
+        }
+    })
 }

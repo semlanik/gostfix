@@ -40,6 +40,8 @@ const (
 	LoginTemplateName      = "login.html"
 	StatusLineTemplateName = "statusline.html"
 	FoldersTemplateName    = "folders.html"
+	MailNewTemplateName    = "mailnew.html"
+	MailTemplateName       = "mailTemplate.eml"
 )
 
 type Templater struct {
@@ -50,6 +52,8 @@ type Templater struct {
 	loginTemplate      *template.Template
 	statusLineTemplate *template.Template
 	foldersTemaplate   *template.Template
+	mailNewTemplate    *template.Template
+	mailTemplate       *template.Template
 }
 
 func NewTemplater(templatesPath string) (t *Templater) {
@@ -89,6 +93,16 @@ func NewTemplater(templatesPath string) (t *Templater) {
 		log.Fatal(err)
 	}
 
+	mailNew, err := parseTemplate(templatesPath + "/" + MailNewTemplateName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mail, err := parseTemplate(templatesPath + "/" + MailTemplateName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	t = &Templater{
 		indexTemplate:      index,
 		mailListTemplate:   maillist,
@@ -97,6 +111,8 @@ func NewTemplater(templatesPath string) (t *Templater) {
 		loginTemplate:      login,
 		statusLineTemplate: statusLine,
 		foldersTemaplate:   folders,
+		mailNewTemplate:    mailNew,
+		mailTemplate:       mail,
 	}
 	return
 }
@@ -136,6 +152,14 @@ func (t *Templater) ExecuteStatusLine(data interface{}) string {
 
 func (t *Templater) ExecuteFolders(data interface{}) string {
 	return executeTemplateCommon(t.foldersTemaplate, data)
+}
+
+func (t *Templater) ExecuteNewMail(data interface{}) string {
+	return executeTemplateCommon(t.mailNewTemplate, data)
+}
+
+func (t *Templater) ExecuteMail(data interface{}) string {
+	return executeTemplateCommon(t.mailTemplate, data)
 }
 
 func executeTemplateCommon(t *template.Template, values interface{}) string {

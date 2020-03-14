@@ -1,0 +1,18 @@
+<form id="mailNewForm" style="height: 100%; width: 100%; display:flex; flex-direction: column;">
+    <div class="horizontalPaddingBox" style="flex-grow: 0!important;">
+        <div style="width: 100%; display: flex; flex-direction: row;">
+            <div class="btn materialLevel1" style="margin-right: 10pt;" onclick="sendNewMail();">
+                <img src="/assets/send.svg" style="width: 40pt"/>
+                Send
+            </div>
+            <div style="display: block; overflow-x: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto;">
+                <span class="primaryText">To: <input type="text" name="to" id="newMailTo"/></span></br>
+                <div style="display: flex; flex-direction: row;"><span style="flex: 0 1 auto" class="primaryText">Subject:</span><input id="newMailSubject" type="text" name="subject" style="flex: 1 1 auto"/></div></br>
+            </div>
+            <img class="iconBtn" style="width: 20pt; margin-left:10pt; margin-right: 10pt;" onclick="closeDetails();" src="/assets/back.svg"/>
+        </div>
+    </div>
+    <div class="horizontalPaddingBox">
+        <textarea id="newMailEditor" name="body" style="height: 100%; width: 100%; border-radius: 3pt; resize: none; border: 1pt solid var(--primary-color);"></textarea>
+    </div>
+</form>

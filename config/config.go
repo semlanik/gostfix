@@ -47,6 +47,7 @@ const (
 )
 
 const (
+	PostfixKeyMyDomain              = "mydomain"
 	PostfixKeyVirtualMailboxMaps    = "virtual_mailbox_maps"
 	PostfixKeyVirtualMailboxBase    = "virtual_mailbox_base"
 	PostfixKeyVirtualMailboxDomains = "virtual_mailbox_domains"
@@ -69,6 +70,7 @@ func ConfigInstance() *GostfixConfig {
 }
 
 type gostfixConfig struct {
+	MyDomain        string
 	VMailboxMaps    string
 	VMailboxBase    string
 	VMailboxDomains []string
@@ -128,9 +130,15 @@ func newConfig() (config *gostfixConfig, err error) {
 		}
 	}
 
-	if len(validDomains) < 0 {
+	if len(validDomains) <= 0 {
 		log.Fatalf("Virtual mailbox domains %s are not configured proper way, check %s in %s\n", domains, PostfixKeyVirtualMailboxDomains, postfixConfigPath)
 		return
+	}
+
+	myDomain := postfixCfg.Section("").Key(PostfixKeyMyDomain).String()
+
+	if len(myDomain) <= 0 {
+		myDomain = "localhost"
 	}
 
 	mongoUser := cfg.Section("").Key(KeyMongoUser).String()
@@ -150,6 +158,7 @@ func newConfig() (config *gostfixConfig, err error) {
 	}
 
 	config = &gostfixConfig{
+		MyDomain:        myDomain,
 		VMailboxBase:    baseDir,
 		VMailboxMaps:    mapsList[1],
 		VMailboxDomains: validDomains,

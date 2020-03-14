@@ -1,0 +1,7 @@
+To: {{.To}}
+Date: {{.Date}}
+Subject: {{.Subject}}
+From: {{.From}}
+Content-Type: text/plain; charset="utf8"
+
+{{.Body}}

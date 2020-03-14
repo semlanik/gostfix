@@ -1,7 +1,7 @@
 <!-- <div class="fadeIn" style="position: absolute; top: 5pt; left: 0; right: 0; height: 10pt"></div> -->
 {{range .}}
 <div id="mail{{.Id}}" class="mailHeaderContainer {{if .Read}}read{{else}}unread{{end}}" style="position: relative;" onmouseover="$('#mailControlPanel{{.Id}}').show()" onmouseout="$('#mailControlPanel{{.Id}}').hide()">
-    <div class="mailHeader noselect" onclick="openEmail('{{.Id}}');" >
+    <div class="mailHeader noselect" onclick="mailOpen('{{.Id}}');" >
         <div class="mailFrom noselect">{{.Mail.Header.From}}</div>
         <div class="mailSubject noselect">{{.Mail.Header.Subject}}</div>
         <div id="mailDate{{.Id}}" class="mailDate noselect" onload="$('#mailDate{{.Id}}').html(localDate({{.Mail.Header.Date}}))">{{.Mail.Header.Subject}}</div>

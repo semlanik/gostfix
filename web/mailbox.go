@@ -27,34 +27,31 @@ package web
 
 import (
 	"crypto/md5"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	template "html/template"
 	"log"
 	"net/http"
+	"net/smtp"
 	"strconv"
 	"strings"
+	"time"
 
 	common "git.semlanik.org/semlanik/gostfix/common"
+	"git.semlanik.org/semlanik/gostfix/config"
 )
 
 func (s *Server) handleMailbox(w http.ResponseWriter, user, email string) {
-	mailList, err := s.storage.GetMailList(user, email, common.Inbox, common.Frame{Skip: 0, Limit: 50})
-
-	if err != nil {
-		s.error(http.StatusInternalServerError, "Couldn't read email database", w)
-		return
-	}
-
 	fmt.Fprint(w, s.templater.ExecuteIndex(&struct {
-		Folders  template.HTML
-		MailList template.HTML
-		Version  template.HTML
+		Folders template.HTML
+		MailNew template.HTML
+		Version template.HTML
 	}{
-		MailList: template.HTML(s.templater.ExecuteMailList(mailList)),
-		Folders:  "Folders",
-		Version:  common.Version,
+		MailNew: template.HTML(s.templater.ExecuteNewMail("")),
+		Folders: "Folders",
+		Version: common.Version,
 	}))
 }
 
@@ -87,6 +84,8 @@ func (s *Server) handleMailboxRequest(path, user string, mailbox int, w http.Res
 		s.handleStatusLine(w, user, emails[mailbox])
 	case "mailList":
 		s.handleMailList(w, r, user, emails[mailbox])
+	case "sendNewMail":
+		s.handleNewMail(w, r, user, emails[mailbox])
 	default:
 		http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
 	}
@@ -227,4 +226,91 @@ func (s *Server) extractFolder(email string, r *http.Request) string {
 	}
 
 	return folder
+}
+
+func (s *Server) handleNewMail(w http.ResponseWriter, r *http.Request, user, email string) {
+	to := r.FormValue("to")
+	resultEmail := s.templater.ExecuteMail(&struct {
+		From    string
+		Subject string
+		Date    template.HTML
+		To      string
+		Body    template.HTML
+	}{
+		From:    email,
+		To:      to,
+		Subject: r.FormValue("subject"),
+		Date:    template.HTML(time.Now().Format(time.RFC1123Z)),
+		Body:    template.HTML(r.FormValue("body")),
+	})
+
+	host := config.ConfigInstance().MyDomain
+	server := host + ":25"
+	_, token := s.extractAuth(w, r)
+	auth := smtp.PlainAuth("token", user, token, host)
+
+	tlsconfig := &tls.Config{
+		InsecureSkipVerify: true,
+		ServerName:         host,
+	}
+
+	client, err := smtp.Dial(server)
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Unable to send message", w)
+		log.Printf("Dial %s \n", err)
+		return
+	}
+
+	err = client.StartTLS(tlsconfig)
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Unable to send message", w)
+		log.Printf("StartTLS %s \n", err)
+		return
+	}
+
+	err = client.Auth(auth)
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Unable to send message", w)
+		log.Printf("Auth %s \n", err)
+		return
+	}
+
+	err = client.Mail(email)
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Unable to send message", w)
+		log.Printf("Mail %s \n", err)
+		return
+	}
+
+	err = client.Rcpt(to)
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Unable to send message", w)
+		log.Println(err)
+		return
+	}
+
+	mailWriter, err := client.Data()
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Unable to send message", w)
+		log.Println(err)
+		return
+	}
+
+	_, err = mailWriter.Write([]byte(resultEmail))
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Unable to send message", w)
+		log.Println(err)
+		return
+	}
+
+	err = mailWriter.Close()
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Unable to send message", w)
+		log.Println(err)
+		return
+	}
+
+	client.Quit()
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte{0})
 }
