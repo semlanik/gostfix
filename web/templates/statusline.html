@@ -4,6 +4,7 @@
         <div style="margin-top: auto; margin-bottom: auto; margin-left: 10pt;" class="noselect">
             {{.Name}} {{.Email}}
         </div>
+        <img class="iconBtn" style="width: 30pt; margin-left: 20pt;" onclick="logout(); event.stopPropagation(); return false;" src="/assets/logout.svg"/>
     </div>
     <div id="emailSelector" class="dropdown-content">
         {{range .EmailsIndexes}}

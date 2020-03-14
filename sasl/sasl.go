@@ -107,8 +107,6 @@ func (s *SaslServer) handleRequest(conn net.Conn) {
 
 		if err == io.EOF {
 			break
-			// time.Sleep(100 * time.Millisecond)
-			// continue
 		}
 
 		if err != nil {
@@ -116,7 +114,6 @@ func (s *SaslServer) handleRequest(conn net.Conn) {
 		}
 
 		currentMessage := fullbuf
-		fmt.Printf("SASL: %s\n", fullbuf)
 
 		ids := strings.Split(currentMessage, "\t")
 		if len(ids) < 2 {

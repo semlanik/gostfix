@@ -402,3 +402,7 @@ function sendNewMail() {
         }
     })
 }
+
+function logout() {
+    window.location.href = "/logout"
+}
