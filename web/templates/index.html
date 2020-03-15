@@ -16,19 +16,19 @@
             <div id="headerBox">
                 <div id="statusLine"></div>
                 <div id="pager" class="noselect">
-                    <img style="width: 20pt;" src="/assets/prev.svg" onclick="prevPage()">
-                    <div style="width: 60pt;display: flex;">
+                    <img style="width: 20px;" src="/assets/prev.svg" onclick="prevPage()">
+                    <div style="width: 60px;display: flex;">
                         <span id="currentPageIndex" style="margin:auto" class="noselect"></span>
                         <span style="margin:auto" class="noselect">/</span>
                         <span id="totalPageCount" style="margin:auto" class="noselect"></span>
                     </div>
-                    <img style="width: 20pt;" src="/assets/next.svg" onclick="nextPage()">
+                    <img style="width: 20px;" src="/assets/next.svg" onclick="nextPage()">
                 </div>
             </div>
             <div class="horizontalPaddingBox">
                 <div id="contentBox">
                     <div id="foldersBox">
-                        <div id="mailNewButton" class="btn materialLevel1" style="margin: 5pt;">New email</div>
+                        <div id="mailNewButton" class="btn materialLevel1" style="margin-bottom: 15px;">New email</div>
                         <div id="folders"></div>
                     </div>
                     <div class="verticalPaddingBox">
@@ -40,7 +40,7 @@
                     </div>
                 </div>
             </div>
-            <div id="copyrightBox"><img src="/assets/logo.svg" height="30pt"/>gostfix {{.Version}} Web interface. Copyright (c) 2020 Alexey Edelev &lt;semlanik@gmail.com&gt;</div>
+            <div id="copyrightBox" class="elidedText"><img src="/assets/logo.svg" height="30px"/>gostfix {{.Version}} Web interface. Copyright (c) 2020 Alexey Edelev &lt;semlanik@gmail.com&gt;</div>
         </div>
     </body>
 </html>

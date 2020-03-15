@@ -12,10 +12,20 @@
     --primary-text-color: #000000;
     --primary-text-dark-color: #000000;
     --secondary-text-color: #ffffff;
-    --secondary-text-dark-color: #ffffff;
-    --default-radius: 3pt;
+    --secondary-text-dark-color: #666666;
+    --default-radius: 5px;
 
-    --base-text-padding: 10pt;
+    --base-text-padding: 10px;
+    --base-border-padding: 8px;
+
+    --small-text-size: 14px;
+    --normal-text-size: 16px;
+    --big-text-size: 18px;
+    --huge-text-size: 24px;
+
+    --text-shadow: 0px 2px 2px rgba(0, 0, 0, .3);
+    --level1-shadow: 0 2px 5px rgba(0, 0, 0, .6);
+    --level2-shadow: 0 4px 9px rgba(0, 0, 0, .6);
 }
 
 body {
@@ -36,12 +46,12 @@ body {
 
 .materialLevel1 {
     overflow: hidden;
-    box-shadow: 0 1pt 3pt rgba(0, 0, 0, .6);
+    box-shadow: var(--level1-shadow);
     border-radius: var(--default-radius);
 }
 
 .materialLevel2 {
-    box-shadow: 0 2pt 6pt rgba(0, 0, 0, .6);
+    box-shadow: var(--level2-shadow);
     border-radius: var(--default-radius);
 }
 
@@ -52,21 +62,17 @@ body {
 .primaryText {
     color: var(--primary-text-color);
     font-weight: bold;
-    font-size: 12pt;
+    font-size: var(--normal-text-size);
 }
 
 .secondaryText {
     color: #777777;
     font-weight: normal;
-    font-size: 10pt;
+    font-size: var(--small-text-size);
 }
 
 #mailBody {
-    border-radius: var(--default-radius);
-    border-width: 1pt;
-    border-style: solid;
-    border-color: var(--primary-color);
-    padding: 5pt;
+    padding: var(--base-border-padding);
 }
 
 .read {

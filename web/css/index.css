@@ -14,7 +14,7 @@ html, body {
     bottom: 0;
     margin: 0;
 
-    padding: 5pt;
+    padding: var(--base-border-padding);
 
     display: flex;
     flex-direction: column;
@@ -29,20 +29,17 @@ html, body {
 #statusLine {
     display: flex;
     flex: 1 1 auto;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
     padding: var(--base-text-padding);
-    min-height: 50pt;
+    min-height: 50px;
 }
 
 #pager {
     display: flex;
     flex-direction: row;
     flex: 0 1 auto;
-    width: 100pt;
-    min-width: 100pt;
-    max-width: 100pt;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
 }
 
 #contentBox {
@@ -54,11 +51,14 @@ html, body {
 
 #foldersBox {
     display: block;
-    width: 150pt;
-    max-width: 150pt;
-    min-width: 150pt;
+    width: 220px;
+    max-width: 220px;
+    min-width: 220px;
     height: 100%;
     max-height: 100%;
+
+    margin-top: 8px;
+    margin-right: 15px;
 }
 
 #mailInnerBox {
@@ -71,10 +71,10 @@ html, body {
 
 #mailList {
     position: absolute;
-    top: 5pt;
-    bottom: 5pt;
-    left: 5pt;
-    right: 5pt;
+    top: 10px;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
     overflow-y: auto;
     background-color: var(--bg-color);
 }
@@ -89,7 +89,7 @@ html, body {
     overflow: hidden;
     display: none;
     background-color: var(--bg-color);
-    padding: 5pt;
+    padding: var(--base-border-padding);
 }
 
 #mailNew {
@@ -102,7 +102,7 @@ html, body {
     overflow: hidden;
     display: none;
     background-color: var(--bg-color);
-    padding: 5pt;
+    padding: 5px;
 }
 
 .mailHeader {
@@ -114,53 +114,47 @@ html, body {
 .mailFrom {
     display: inline-block;
     flex: 0 1 auto;
-    min-width: 250pt;
-    max-width: 250pt;
-    width: 250pt;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
+    min-width: 300px;
+    max-width: 300px;
+    width: 300px;
     padding: var(--base-text-padding);
+    font-size: var(--normal-text-size);
 }
 
 .mailSubject {
     display: block;
     flex: 1 1 auto;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     padding: var(--base-text-padding);
+    font-size: var(--normal-text-size);
 }
 
 .mailDate {
     display: block;
     flex: 0 1 auto;
-    width: 100pt;
-    min-width: 100pt;
-    max-width: 100pt;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    width: 160px;
+    min-width: 160px;
+    max-width: 160px;
     padding: var(--base-text-padding);
+    font-size: var(--small-text-size);
+    text-align: center;
+    color: var(--secondary-text-dark-color)
 }
 
 .mailControlPanel {
     position: absolute;
-    min-width: 100pt;
-    top: 0pt;
-    right: 0pt;
-    bottom: 1pt;
+    min-width: 160px;
+    top: 0px;
+    right: 0px;
+    bottom: 1px;
     z-index: 2;
     display: none;
 }
 
 #copyrightBox {
+    font-size: var(--small-text-size);
     display: flex;
     flex-direction: row;
     flex: 0 1 auto;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    word-wrap: none;
     padding: var(--base-text-padding);
     text-align: right;
     vertical-align: middle;
@@ -173,7 +167,7 @@ html, body {
     top: 0;
     bottom: 0;
 
-    padding: 5pt;
+    padding: var(--base-border-padding);
 }
 
 .horizontalPaddingBox {
@@ -182,5 +176,17 @@ html, body {
     left: 0;
     right: 0;
 
-    padding: 5pt;
+    padding: var(--base-border-padding);
+}
+
+.elidedText {
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.contentArea {
+    font-family: Dejavu Sans;
+    border-radius: var(--default-radius);
+    border: 1px solid var(--primary-color);
 }

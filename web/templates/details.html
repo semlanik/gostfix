@@ -1,18 +1,18 @@
 <div style="height: 100%; width: 100%; display:flex; flex-direction: column;">
     <div class="horizontalPaddingBox" style="flex-grow: 0!important;">
         <div style="width: 100%; display: flex; flex-direction: row;">
-            <div style="display: block; overflow-x: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto;">
+            <div class="elidedText" style="display: block; flex: 1 1 auto;">
                 <span class="primaryText">From: {{.From}}</span></br>
                 <span class="secondaryText">To: {{.To}}</span></br>
                 <span class="primaryText">Subject: {{.Subject}}</span></br>
             </div>
-            <img id="readIcon{{.MailId}}" class="iconBtn" style="width: 20pt; margin-right: 10pt;" onclick="toggleRead('{{.MailId}}', 'readIcon');" src="/assets/read.svg"/>
-            <img id="restoreIcon" class="iconBtn" style="display:{{if .Trash}}block{{else}}none{{end}}; width: 20pt; margin-right: 10pt;" onclick="restoreMail({{.MailId}}, closeDetails);" src="/assets/restore.svg"/>
-            <img id="deleteIcon" class="iconBtn" style="width: 20pt; margin-right: 10pt;" onclick="removeMail({{.MailId}}, closeDetails);" src="/assets/remove.svg"/>
-            <img class="iconBtn" style="width: 20pt; margin-left:10pt; margin-right: 10pt;" onclick="closeDetails();" src="/assets/back.svg"/>
+            <img id="readIcon{{.MailId}}" class="iconBtn" style="width: 20px; margin-right: 10px;" onclick="toggleRead('{{.MailId}}', 'readIcon');" src="/assets/read.svg"/>
+            <img id="restoreIcon" class="iconBtn" style="display:{{if .Trash}}block{{else}}none{{end}}; width: 20px; margin-right: 10px;" onclick="restoreMail({{.MailId}}, closeDetails);" src="/assets/restore.svg"/>
+            <img id="deleteIcon" class="iconBtn" style="width: 20px; margin-right: 10px;" onclick="removeMail({{.MailId}}, closeDetails);" src="/assets/remove.svg"/>
+            <img class="iconBtn" style="width: 20px; margin-left:10px; margin-right: 10px;" onclick="closeDetails();" src="/assets/back.svg"/>
         </div>
     </div>
-    <div id="mailBody" class="horizontalPaddingBox">
+    <div id="mailBody" class="contentArea horizontalPaddingBox">
         <div style="position: relative; max-width: 100%; max-height: 100%; width: 100%; height: 100%;">
             <div style="position: absolute; top: 0; bottom: 0; left: 0; right: 0; overflow-y: auto;">
                 <div>{{.Text}}</div>

@@ -1,10 +1,10 @@
 <div class="dropbtn materialLevel1" onclick="toggleDropDown('emailSelector')">
     <div style="display: flex;" class="noselect">
-        <img src="https://www.gravatar.com/avatar/{{.EmailHash}}?s=100&d=monsterid" style="border-radius: 100%; border-color: var(--primary-color); border-width: 2pt; border-style: solid; height: 30pt; width: 30pt;">
-        <div style="margin-top: auto; margin-bottom: auto; margin-left: 10pt;" class="noselect">
+        <img src="https://www.gravatar.com/avatar/{{.EmailHash}}?s=100&d=monsterid" style="border-radius: 100%; border-color: var(--primary-color); border-width: 2px; border-style: solid; height: 30px; width: 30px;">
+        <div style="margin-top: auto; margin-bottom: auto; margin-left: 10px;" class="noselect">
             {{.Name}} {{.Email}}
         </div>
-        <img class="iconBtn" style="width: 30pt; margin-left: 20pt;" onclick="logout(); event.stopPropagation(); return false;" src="/assets/logout.svg"/>
+        <img class="iconBtn" style="width: 30px; margin-left: 20px;" onclick="logout(); event.stopPropagation(); return false;" src="/assets/logout.svg"/>
     </div>
     <div id="emailSelector" class="dropdown-content">
         {{range .EmailsIndexes}}
@@ -12,6 +12,6 @@
         {{end}}
     </div>
     <div class="noselect" style="position: relative;">
-        <img src="/assets/down.svg" style="position: absolute; bottom: 0; right: 0; margin-right: -5pt; margin-bottom: -5pt; height: 7pt;">
+        <img src="/assets/down.svg" style="position: absolute; bottom: 0; right: 0; margin-right: -5px; margin-bottom: -5px; height: 7px;">
     </div>
 </div>

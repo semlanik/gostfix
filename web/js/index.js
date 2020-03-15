@@ -205,7 +205,7 @@ function loadStatusLine() {
     })
 }
 
-function localDate(timestamp) {
+function localDate(elementToChange, timestamp) {
     var today = new Date()
     var date = new Date(timestamp*1000)
 
@@ -221,7 +221,7 @@ function localDate(timestamp) {
         dateString = date.toLocaleDateString("en-US")
     }
 
-    return dateString
+    $("#"+elementToChange).text(dateString)
 }
 
 function setRead(mailId, read) {

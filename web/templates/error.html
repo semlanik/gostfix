@@ -14,12 +14,12 @@
         <div id="main">
             <div class="horizontalPaddingBox">
                 <div style="display: flex; width: 100%; height: 100%; justify-content: center;">
-                    <img src="/assets/error.svg" height="100pt"/>
-                    <span style="font-size: 24pt;">{{.Code}}</span></br>
-                    <span style="font-size: 14pt;">{{.Text}}</span>
+                    <img src="/assets/error.svg" height="100px"/>
+                    <span style="font-size: 26px;">{{.Code}}</span></br>
+                    <span style="font-size: var(--big-text-size);">{{.Text}}</span>
                 </div>
             </div>
-            <div id="copyrightBox"><img src="/assets/logo.svg" height="30pt"/>gostfix {{.Version}} Web interface. Copyright (c) 2020 Alexey Edelev &lt;semlanik@gmail.com&gt;</div>
+            <div id="copyrightBox" class="elidedText"><img src="/assets/logo.svg" height="30px"/>gostfix {{.Version}} Web interface. Copyright (c) 2020 Alexey Edelev &lt;semlanik@gmail.com&gt;</div>
         </div>
     </body>
 </html>

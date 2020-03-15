@@ -2,18 +2,18 @@
     position: relative;
 
     display: block;
-    padding:8pt;
+    padding: 14px;
 
     overflow: hidden;
 
     border-width: 0;
     outline: none;
-    box-shadow: 0 1pt 3pt rgba(0, 0, 0, .6);
+    box-shadow: var(--level1-shadow);
 
     background-color: var(--primary-color);
     color: var(--secondary-text-color);
 
-    font-size: 12pt;
+    font-size: var(--normal-text-size);
     font-weight: bold;
     text-align: center;
     transition: background-color .3s;
@@ -96,17 +96,17 @@
 /*Input fields*/
 .inpt {
     position:relative;
-    margin-top: 20pt;
+    margin-top: 20px;
     margin-bottom: 50px;
 }
 
 .inpt input {
-    font-size: 16pt;
-    padding: 9pt 9pt 4pt 4pt;
+    font-size: var(--big-text-size);
+    padding: 11px 9px 9px;
     display: block;
-    width: 200pt;
+    width: 300px;
     border: none;
-    border-bottom: 1pt solid var(--primary-color);
+    border-bottom: 1px solid var(--primary-color);
 }
 
 .inpt input:invalid {
@@ -122,37 +122,37 @@
 
 .inpt label {
     color: var(--primary-text-color);
-    font-size: 18pt;
+    font-size: var(--huge-text-size);
     font-weight: normal;
     position: absolute;
     pointer-events: none;
-    left: 5pt;
-    top: 10pt;
+    left: 5px;
+    top: 10px;
     transition: 0.2s ease all;
     -moz-transition: 0.2s ease all;
     -webkit-transition: 0.2s ease all;
 }
 
 .inpt input:focus ~ label {
-    top: -20pt;
-    font-size: 12pt;
+    top: -25px;
+    font-size: var(--normal-text-size);
     color: var(--primary-text-color);
 }
 
 .inpt input:valid ~ label {
-    top: -20pt;
-    font-size: 12pt;
+    top: -25px;
+    font-size: var(--normal-text-size);
     color: var(--primary-text-color);
 }
 .inpt .bar {
     position: relative;
     display: block;
-    width: 213pt;
+    width: 100%;
 }
 
 .inpt .bar:before, .bar:after {
     content: '';
-    height: 2pt;
+    height: 2px;
     width: 0;
     bottom: 0;
     position: absolute;
@@ -176,9 +176,9 @@
 
 .inpt .highlight {
     position: absolute;
-    height:75%;
-    width: 213pt;
-    bottom: 4pt;
+    height:80%;
+    width: 100%;
+    bottom: 4px;
     left:0;
     pointer-events: none;
     opacity: 0.5;
@@ -205,16 +205,19 @@
     to { width:0; background:transparent; }
 }
 
+/*folder button*/
 .folderBtn {
     display: flex;
     flex-direction: row;
-    padding: 2pt;
+    padding: 2px var(--base-text-padding);
     left: 0;
     right: 0;
-    margin-top: 5pt;
-    border-bottom-right-radius: var(--default-radius);
-    border-top-right-radius: var(--default-radius);
-    background-color: var(--secondary-color);
+    margin-top: 2px;
+    border-radius: var(--default-radius);
+    background-color: transparent;
+    font-size: var(--normal-text-size);
+
+    text-shadow: var(--text-shadow);
 
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -226,7 +229,7 @@
 
 .folderBtn:hover {
     cursor: pointer;
-    background-color: var(--secondary-dark-color);
+    background-color: var(--secondary-color);
 }
 
 .iconBtn:hover, .iconBtn:focus {
@@ -234,8 +237,8 @@
 }
 
 .iconBtn {
-    width: 20pt;
-    min-width: 20pt;
+    width: 24px;
+    min-width: 24px;
 
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -250,7 +253,7 @@
     display: inline;
     background-color: var(--bg-color);
     color: var(--primary-text-color);
-    font-size: 12pt;
+    font-size: var(--normal-text-size);
     cursor: pointer;
     padding: var(--base-text-padding);
 }
@@ -261,8 +264,8 @@
     margin-top: var(--base-text-padding);
 
     background-color: var(--bg-color);
-    min-width: 160pt;
-    box-shadow: 0 1pt 3pt rgba(0, 0, 0, .6);
+    min-width: 160px;
+    box-shadow: var(--level1-shadow);
     z-index: 1;
 }
 
