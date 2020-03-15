@@ -155,12 +155,16 @@ html, body {
 }
 
 #copyrightBox {
+    display: flex;
+    flex-direction: row;
     flex: 0 1 auto;
     text-overflow: ellipsis;
     overflow: hidden;
     word-wrap: none;
     padding: var(--base-text-padding);
     text-align: right;
+    vertical-align: middle;
+    justify-content: flex-end;
 }
 
 .verticalPaddingBox {
