@@ -8,28 +8,46 @@
         <link type="text/css" href="/css/styles.css" rel="stylesheet">
         <link type="text/css" href="/css/controls.css" rel="stylesheet">
         <script src="/js/jquery-3.4.1.min.js"></script>
+        <script>
+            $(document).ready(function() {
+                $("#showPasswordButton").mousedown(function() {
+                    $("#passwordField").attr("type", "text")
+                })
+
+                $("#showPasswordButton").mouseup(function() {
+                    $("#passwordField").attr("type", "password")
+                })
+
+            })
+        </script>
         <title>Gostfix mail {{.Version}}</title>
     </head>
     <body>
         <div id="main">
-            <div class="horizontalPaddingBox" >
+            <div class="horizontalPaddingBox">
                 <div style="display: flex; flex-direction: column; width: 100%; height: 100%; justify-content: center;">
-                    <form method="POST" action="/login" style="margin: 0 auto;">
-                        <div class="inpt">
+                    <form method="POST" action="/register" style="margin: 0 auto;">
+                        <div class="inpt bad">
+                            <input name="fullname" type="text" required>
+                            <span class="highlight"></span>
+                            <span class="bar"></span>
+                            <label>Full name</label>
+                        </div>
+                        <div class="inpt bad">
                             <input name="user" type="text" required>
                             <span class="highlight"></span>
                             <span class="bar"></span>
                             <label>Email</label>
                         </div>
-                        <div class="inpt">
-                            <input name="password" type="password" required>
+                        <div class="inpt bad">
+                            <input id="passwordField" name="password" type="password" required>
                             <span class="highlight"></span>
                             <span class="bar"></span>
                             <label>Password</label>
+                            <img id="showPasswordButton" src="/assets/eye.svg"/>
                         </div>
                         <input type="submit" style="visibility: hidden;" />
                     </form>
-                    {{.Signup}}
                 </div>
             </div>
             <div id="copyrightBox" class="elidedText"><img src="/assets/logo.svg" height="30px"/>gostfix {{.Version}} Web interface. Copyright (c) 2020 Alexey Edelev &lt;semlanik@gmail.com&gt;</div>

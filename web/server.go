@@ -27,12 +27,14 @@ package web
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
 
 	auth "git.semlanik.org/semlanik/gostfix/auth"
 	common "git.semlanik.org/semlanik/gostfix/common"
+	"git.semlanik.org/semlanik/gostfix/config"
 	db "git.semlanik.org/semlanik/gostfix/db"
 	utils "git.semlanik.org/semlanik/gostfix/utils"
 
@@ -121,6 +123,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			s.handleLogin(w, r)
 		case "/logout":
 			s.handleLogout(w, r)
+		case "/register":
+			s.handleRegister(w, r)
 		case "/mail":
 			fallthrough
 		case "/setRead":
@@ -135,6 +139,24 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
 		}
 	}
+}
+
+func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
+	if !config.ConfigInstance().RegistrationEnabled {
+		s.error(http.StatusNotImplemented, "Registration is disabled on this server", w)
+		return
+	}
+
+	if err := r.ParseForm(); err == nil {
+		// user := r.FormValue("user")
+		// password := r.FormValue("password")
+		// fullname := r.FormValue("fullname")
+	}
+
+	fmt.Fprint(w, s.templater.ExecuteRegister(&struct {
+		Version string
+	}{common.Version}))
+
 }
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -155,11 +177,19 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var signupTemplate template.HTML
+	if config.ConfigInstance().RegistrationEnabled {
+		signupTemplate = template.HTML(s.templater.ExecuteSignup(""))
+	} else {
+		signupTemplate = ""
+	}
+
 	//Otherwise make sure user logged out and show login page
 	s.logout(w, r)
 	fmt.Fprint(w, s.templater.ExecuteLogin(&struct {
 		Version string
-	}{common.Version}))
+		Signup  template.HTML
+	}{common.Version, signupTemplate}))
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {

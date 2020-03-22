@@ -17,3 +17,6 @@ mongo_password =
 
 # Path to attachments storage. By dafault "./attachments".
 attachments_path = attachments
+
+# Enables registration functionality, disabled by default
+registration_enabled = false

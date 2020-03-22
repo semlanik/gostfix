@@ -44,6 +44,7 @@ const (
 	KeyAttachmentsPath     = "attachments_path"
 	KeyAttachmentsUser     = "attachments_user"
 	KeyAttachmentsPassword = "attachments_password"
+	KeyRegistrationEnabled = "registration_enabled"
 )
 
 const (
@@ -70,14 +71,15 @@ func ConfigInstance() *GostfixConfig {
 }
 
 type gostfixConfig struct {
-	MyDomain        string
-	VMailboxMaps    string
-	VMailboxBase    string
-	VMailboxDomains []string
-	MongoUser       string
-	MongoPassword   string
-	MongoAddress    string
-	AttachmentsPath string
+	MyDomain            string
+	VMailboxMaps        string
+	VMailboxBase        string
+	VMailboxDomains     []string
+	MongoUser           string
+	MongoPassword       string
+	MongoAddress        string
+	AttachmentsPath     string
+	RegistrationEnabled bool
 }
 
 func newConfig() (config *gostfixConfig, err error) {
@@ -157,15 +159,18 @@ func newConfig() (config *gostfixConfig, err error) {
 		attachmentsPath = "attachments"
 	}
 
+	registrationEnabled := cfg.Section("").Key(KeyRegistrationEnabled).String()
+
 	config = &gostfixConfig{
-		MyDomain:        myDomain,
-		VMailboxBase:    baseDir,
-		VMailboxMaps:    mapsList[1],
-		VMailboxDomains: validDomains,
-		MongoUser:       mongoUser,
-		MongoPassword:   mongoPassword,
-		MongoAddress:    mongoAddress,
-		AttachmentsPath: attachmentsPath,
+		MyDomain:            myDomain,
+		VMailboxBase:        baseDir,
+		VMailboxMaps:        mapsList[1],
+		VMailboxDomains:     validDomains,
+		MongoUser:           mongoUser,
+		MongoPassword:       mongoPassword,
+		MongoAddress:        mongoAddress,
+		AttachmentsPath:     attachmentsPath,
+		RegistrationEnabled: registrationEnabled == "true",
 	}
 	return
 }

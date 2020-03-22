@@ -137,6 +137,15 @@
     -webkit-transition: 0.2s ease all;
 }
 
+.inpt img {
+    position: absolute;
+    right: 10px;
+    top: 14px;
+    display: block;
+    width: 24px;
+    height: 24px;
+}
+
 .inpt input:focus ~ label {
     top: -25px;
     font-size: var(--normal-text-size);
@@ -154,13 +163,21 @@
     width: 100%;
 }
 
+.inpt.bad .bar:before, .inpt.bad .bar:after{
+    background-color: var(--bad-color);
+}
+
+.inpt.weak .bar:before, .inpt.weak .bar:after{
+    background-color: var(--invalid-color);
+}
+
 .inpt .bar:before, .bar:after {
     content: '';
     height: 2px;
     width: 0;
     bottom: 0;
     position: absolute;
-    background: var(--primary-color);
+    background-color: var(--primary-color);
     transition: 0.2s ease all;
     -moz-transition: 0.2s ease all;
     -webkit-transition: 0.2s ease all;
@@ -192,6 +209,14 @@
     -webkit-animation:inputHighlighter 0.3s ease;
     -moz-animation:inputHighlighter 0.3s ease;
     animation:inputHighlighter 0.3s ease;
+}
+
+.inpt.bad input{
+    border-bottom: 1px solid var(--bad-color);
+}
+
+.inpt.weak input{
+    border-bottom: 1px solid var(--invalid-color);
 }
 
 @-webkit-keyframes inputHighlighter {
