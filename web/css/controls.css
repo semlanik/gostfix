@@ -294,7 +294,14 @@
 .toEmail {
     border-radius: var(--default-radius);
     font-size: var(--small-text-size);
-    margin-right: 10px;
-    padding: var(--base-text-padding);
+    margin: 5px 10px 5px 0;
+    padding: var(--small-text-padding);
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 

@@ -6,10 +6,15 @@
                 Send
             </div>
             <div class="elidedText" style="display: block; flex: 1 1 auto;">
-                <div style="display: flex; flex-direction: row; max-width: 100%; flex-wrap: wrap;"><span style="flex: 0 1 auto; margin: auto;" class="primaryText">To:</span><div id="toEmailList" style="flex: 0 1 auto; display: flex; flex-wrap: wrap;"></div><input id="toEmailField" type="text" style="flex: 1 1 auto;"/></div>
-                <div style="display: flex; flex-direction: row;"><span style="flex: 0 1 auto" class="primaryText">Subject:</span><input id="newMailSubject" type="text" name="subject" style="flex: 1 1 auto"/></div></br>
+                <div style="flex: 0 1 auto; display: flex; flex-direction: row;">
+                    <span style="flex: 0 1 auto; margin: auto 10px;" class="primaryText">To:</span>
+                    <div id="toEmailList" class=".noselect" style="flex: 1 1 auto; display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--primary-color);">
+                        <input id="toEmailField" class="hiddenInput" type="text" style="flex: 1 1 auto; min-width: 500px;"/>
+                    </div>
+                </div>
+                <div class=".noselect" style="display: flex; flex-direction: row; margin-top: 10px;"><span style="flex: 0 1 auto; margin: auto 10px;" class="primaryText">Subject:</span><div style="display: flex; flex-direction: row; flex: 1 1 auto; border-bottom: 1px solid var(--primary-color);"><input id="newMailSubject" type="text" name="subject" style="flex: 1 1 auto" class="hiddenInput" /></div></div>
             </div>
-            <img class="iconBtn" style="width: 20px; margin-left:10px; margin-right: 10px;" onclick="closeDetails();" src="/assets/back.svg"/>
+            <img class="iconBtn" style="width: 20px; height: 20px; margin-left:10px;" onclick="closeDetails();" src="/assets/back.svg"/>
         </div>
     </div>
     <div class="horizontalPaddingBox">

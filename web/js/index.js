@@ -75,9 +75,20 @@ $(document).ready(function(){
     connectNotifier()
 
     $("#toEmailField").on("input", toEmailFieldChanged)
-    $("#toEmailField").keyup(function(e){
-        if (e.keyCode == 8 && toEmailPreviousSelectionPosition == 0 && e.target.selectionStart == 0 && toEmailList.length > 0 && $("#toEmailList").children().length > 0) {
-            removeToEmail($("#toEmailList").children().last().attr("id"), toEmailList[toEmailList.length - 1])
+    $("#toEmailField").keydown(function(e){
+        var actualText = $("#toEmailField").val()
+        const selectionPosition = e.target.selectionStart
+        switch(e.keyCode) {
+            case 8:
+                if (toEmailPreviousSelectionPosition == 0 && e.target.selectionStart == 0
+                    && toEmailList.length > 0 && $("#toEmailList").children().length > 1) {
+                        removeToEmail($("#toEmailList").children()[$("#toEmailList").children().length - 2].id, toEmailList[toEmailList.length - 1])
+                    }
+            break
+            case 13:
+                addToEmail(actualText.slice(0, selectionPosition))
+                $("#toEmailField").val(actualText.slice(selectionPosition + 1, actualText.length))
+                break
         }
         toEmailPreviousSelectionPosition = e.target.selectionStart
     })
@@ -87,22 +98,25 @@ function toEmailFieldChanged(e) {
     const selectionPosition = e.target.selectionStart - 1
     var actualText = $("#toEmailField").val()
 
-    if (actualText.length <= 0 || selectionPosition <= 0) {
+    if (actualText.length <= 0 || selectionPosition < 0) {
         return
     }
 
     var lastChar = actualText[selectionPosition]
     if (lastChar.match(emailEndRegex)) {
-        var toEmail = actualText.slice(0, selectionPosition)
+        addToEmail(actualText.slice(0, selectionPosition))
         $("#toEmailField").val(actualText.slice(selectionPosition + 1, actualText.length))
-        if (toEmail.length <= 0) {
-            return
-        }
-        var style = toEmail.match(emailRegex) ? "valid" : "invalid"
-        $("#toEmailList").append("<div class=\""+ style + " toEmail\" id=\"toEmail" + toEmailIndex + "\">" + toEmail + "<img class=\"iconBtn\" style=\"height: 12px; margin-left:10px; margin: auto;\" onclick=\"removeToEmail('toEmail" + toEmailIndex + "', '" + toEmail + "');\" src=\"/assets/cross.svg\"/></div>")
-        toEmailIndex++
-        toEmailList.push(toEmail)
     }
+}
+
+function addToEmail(toEmail) {
+    if (toEmail.length <= 0) {
+        return
+    }
+    var style = toEmail.match(emailRegex) ? "valid" : "invalid"
+    $("<div class=\""+ style + " toEmail\" id=\"toEmail" + toEmailIndex + "\">" + toEmail + "<img class=\"iconBtn\" style=\"height: 12px; margin-left:10px; margin: auto;\" onclick=\"removeToEmail('toEmail" + toEmailIndex + "', '" + toEmail + "');\" src=\"/assets/cross.svg\"/></div>").insertBefore("#toEmailField")
+    toEmailIndex++
+    toEmailList.push(toEmail)
 }
 
 function removeToEmail(id, email) {
@@ -112,8 +126,6 @@ function removeToEmail(id, email) {
     }
 
     $("#" + id).remove()
-    console.log("Remove email: " + email + " index:" + index)
-    console.log("toEmailList: " + toEmailList)
 }
 
 function mailNew(e) {
@@ -433,7 +445,6 @@ function sendNewMail() {
     }
     $("#newMailTo").val(composedEmailString)
     var formValue = $("#mailNewForm").serialize()
-    console.log("formValue: " + formValue)
     $.ajax({
         url: mailbox + "/sendNewMail",
         data: formValue,

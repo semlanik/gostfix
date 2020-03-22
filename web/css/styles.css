@@ -18,6 +18,7 @@
 
     --base-text-padding: 10px;
     --base-border-padding: 8px;
+    --small-text-padding: 6px;
 
     --small-text-size: 14px;
     --normal-text-size: 16px;
@@ -121,4 +122,10 @@ body {
 .toEmail.invalid {
     background-color: var(--invalid-color);
     color: var(--primary-text-color);
+}
+
+.hiddenInput {
+    border: none;
+    margin: 8px 0;
+    font-size: var(--normal-text-size);
 }
