@@ -394,6 +394,15 @@ function setMailNewVisible(visible) {
         $("#mailNew").hide()
         $("#mailList").css({pointerEvents: "auto"})
     }
+
+    while (toEmailList.length > 0 && $("#toEmailList").children().length > 1) {
+        removeToEmail($("#toEmailList").children()[$("#toEmailList").children().length - 2].id, toEmailList[toEmailList.length - 1])
+    }
+    toEmailList = new Array()
+    $("#newMailEditor").val("")
+    $("#newMailSubject").val("")
+    $("#newMailTo").val("")
+    $("#toEmailField").val("")
 }
 
 function updateMailList(folder, page) {
