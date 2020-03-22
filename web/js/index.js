@@ -29,8 +29,15 @@ var currentMail = ""
 var mailbox = ""
 var pageMax = 10
 const mailboxRegex = /^(\/m\d+)/g
+const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+const emailEndRegex = /[;,\s]/g
+
 var folders = new Array()
 var notifierSocket = null
+
+var toEmailList = new Array()
+var toEmailIndex = 0
+var toEmailPreviousSelectionPosition = 0
 
 $(window).click(function(e){
     var target = $(e.target)
@@ -66,7 +73,48 @@ $(document).ready(function(){
 
     $("#mailNewButton").click(mailNew)
     connectNotifier()
+
+    $("#toEmailField").on("input", toEmailFieldChanged)
+    $("#toEmailField").keyup(function(e){
+        if (e.keyCode == 8 && toEmailPreviousSelectionPosition == 0 && e.target.selectionStart == 0 && toEmailList.length > 0 && $("#toEmailList").children().length > 0) {
+            removeToEmail($("#toEmailList").children().last().attr("id"), toEmailList[toEmailList.length - 1])
+        }
+        toEmailPreviousSelectionPosition = e.target.selectionStart
+    })
 })
+
+function toEmailFieldChanged(e) {
+    const selectionPosition = e.target.selectionStart - 1
+    var actualText = $("#toEmailField").val()
+
+    if (actualText.length <= 0 || selectionPosition <= 0) {
+        return
+    }
+
+    var lastChar = actualText[selectionPosition]
+    if (lastChar.match(emailEndRegex)) {
+        var toEmail = actualText.slice(0, selectionPosition)
+        $("#toEmailField").val(actualText.slice(selectionPosition + 1, actualText.length))
+        if (toEmail.length <= 0) {
+            return
+        }
+        var style = toEmail.match(emailRegex) ? "valid" : "invalid"
+        $("#toEmailList").append("<div class=\""+ style + " toEmail\" id=\"toEmail" + toEmailIndex + "\">" + toEmail + "<img class=\"iconBtn\" style=\"height: 12px; margin-left:10px; margin: auto;\" onclick=\"removeToEmail('toEmail" + toEmailIndex + "', '" + toEmail + "');\" src=\"/assets/cross.svg\"/></div>")
+        toEmailIndex++
+        toEmailList.push(toEmail)
+    }
+}
+
+function removeToEmail(id, email) {
+    const index = toEmailList.indexOf(email)
+    if (index >= 0) {
+        toEmailList.splice(index, 1)
+    }
+
+    $("#" + id).remove()
+    console.log("Remove email: " + email + " index:" + index)
+    console.log("toEmailList: " + toEmailList)
+}
 
 function mailNew(e) {
     window.location.hash = currentFolder + currentPage + "/mailNew"
@@ -379,7 +427,13 @@ function toggleDropDown(dd) {
 }
 
 function sendNewMail() {
+    var composedEmailString = toEmailList[0]
+    for(var i = 1; i < toEmailList.length; i++) {
+        composedEmailString += "," + toEmailList[i]
+    }
+    $("#newMailTo").val(composedEmailString)
     var formValue = $("#mailNewForm").serialize()
+    console.log("formValue: " + formValue)
     $.ajax({
         url: mailbox + "/sendNewMail",
         data: formValue,

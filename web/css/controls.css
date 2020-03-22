@@ -290,3 +290,11 @@
     -ms-user-select: none;
     user-select: none;
 }
+
+.toEmail {
+    border-radius: var(--default-radius);
+    font-size: var(--small-text-size);
+    margin-right: 10px;
+    padding: var(--base-text-padding);
+}
+

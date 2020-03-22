@@ -1,18 +1,19 @@
 <form id="mailNewForm" style="height: 100%; width: 100%; display:flex; flex-direction: column;">
     <div class="horizontalPaddingBox" style="flex-grow: 0!important;">
         <div style="width: 100%; display: flex; flex-direction: row;">
-            <div class="btn materialLevel1" style="margin-right: 10px;" onclick="sendNewMail();">
+            <div class="btn materialLevel1" style="margin-right: 10px; min-width: 60px; max-height: 60px; max-width: 60px; min-height: 60px;" onclick="sendNewMail();">
                 <img src="/assets/send.svg" style="width: 40px"/>
                 Send
             </div>
             <div class="elidedText" style="display: block; flex: 1 1 auto;">
-                <span class="primaryText">To: <input type="text" name="to" id="newMailTo"/></span></br>
+                <div style="display: flex; flex-direction: row; max-width: 100%; flex-wrap: wrap;"><span style="flex: 0 1 auto; margin: auto;" class="primaryText">To:</span><div id="toEmailList" style="flex: 0 1 auto; display: flex; flex-wrap: wrap;"></div><input id="toEmailField" type="text" style="flex: 1 1 auto;"/></div>
                 <div style="display: flex; flex-direction: row;"><span style="flex: 0 1 auto" class="primaryText">Subject:</span><input id="newMailSubject" type="text" name="subject" style="flex: 1 1 auto"/></div></br>
             </div>
             <img class="iconBtn" style="width: 20px; margin-left:10px; margin-right: 10px;" onclick="closeDetails();" src="/assets/back.svg"/>
         </div>
     </div>
     <div class="horizontalPaddingBox">
+        <input type="hidden" id="newMailTo" name="to">
         <textarea id="newMailEditor" name="body" class="contentArea" style="height: 100%; width: 100%; resize: none;"></textarea>
     </div>
 </form>

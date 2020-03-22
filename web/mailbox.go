@@ -42,6 +42,7 @@ import (
 
 	common "git.semlanik.org/semlanik/gostfix/common"
 	"git.semlanik.org/semlanik/gostfix/config"
+	"git.semlanik.org/semlanik/gostfix/utils"
 )
 
 func (s *Server) handleMailbox(w http.ResponseWriter, user, email string) {
@@ -299,11 +300,18 @@ func (s *Server) handleNewMail(w http.ResponseWriter, r *http.Request, user, ema
 		return
 	}
 
-	err = client.Rcpt(rawMail.Header.To)
-	if err != nil {
-		s.error(http.StatusInternalServerError, "Unable to send message", w)
-		log.Println(err)
-		return
+	toList := strings.Split(rawMail.Header.To, ",")
+	for _, to := range toList {
+		if !utils.RegExpUtilsInstance().EmailChecker.MatchString(to) {
+			log.Println("Skip email " + to)
+			continue
+		}
+		err = client.Rcpt(to)
+		if err != nil {
+			// s.error(http.StatusInternalServerError, "Unable to send message", w)
+			log.Println(err)
+			continue
+		}
 	}
 
 	mailWriter, err := client.Data()
