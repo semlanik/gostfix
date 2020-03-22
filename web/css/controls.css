@@ -75,6 +75,10 @@
     display: block;
 }
 
+.btn.disabled {
+    background-color: var(--inactive-color);
+}
+
 .fadeOut {
     background: -moz-linear-gradient(top, rgba(0, 0, 0, 0) 0%, var(--bg-color) 100%); /* FF3.6+ */
     background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(0, 0, 0,0)), color-stop(100%,var(--bg-color))); /* Chrome,Safari4+ */

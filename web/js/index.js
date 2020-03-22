@@ -86,6 +86,7 @@ $(document).ready(function(){
                     }
             break
             case 13:
+            case 9:
                 addToEmail(actualText.slice(0, selectionPosition))
                 $("#toEmailField").val(actualText.slice(selectionPosition + 1, actualText.length))
                 break
@@ -117,15 +118,25 @@ function addToEmail(toEmail) {
     $("<div class=\""+ style + " toEmail\" id=\"toEmail" + toEmailIndex + "\">" + toEmail + "<img class=\"iconBtn\" style=\"height: 12px; margin-left:10px; margin: auto;\" onclick=\"removeToEmail('toEmail" + toEmailIndex + "', '" + toEmail + "');\" src=\"/assets/cross.svg\"/></div>").insertBefore("#toEmailField")
     toEmailIndex++
     toEmailList.push(toEmail)
+    checkSendDisabled()
 }
 
 function removeToEmail(id, email) {
     const index = toEmailList.indexOf(email)
     if (index >= 0) {
         toEmailList.splice(index, 1)
+        checkSendDisabled()
     }
 
     $("#" + id).remove()
+}
+
+function checkSendDisabled() {
+    if (toEmailList.length > 0) {
+        $("#sendButton").removeClass("disabled")
+    } else {
+        $("#sendButton").addClass("disabled")
+    }
 }
 
 function mailNew(e) {
@@ -438,7 +449,16 @@ function toggleDropDown(dd) {
     $("#"+dd).toggle()
 }
 
-function sendNewMail() {
+function sendNewMail(force) {
+    if (toEmailList.length <= 0) {
+        return
+    }
+
+    if (!force) {
+        //TODO: Check if subject or body empty and display popup here
+        // return
+    }
+
     var composedEmailString = toEmailList[0]
     for(var i = 1; i < toEmailList.length; i++) {
         composedEmailString += "," + toEmailList[i]
