@@ -104,7 +104,7 @@ function toEmailFieldChanged(e) {
     }
 
     var lastChar = actualText[selectionPosition]
-    if (lastChar.match(emailEndRegex)) {
+    if (emailEndRegex.test(lastChar)) {
         addToEmail(actualText.slice(0, selectionPosition))
         $("#toEmailField").val(actualText.slice(selectionPosition + 1, actualText.length))
     }
@@ -114,7 +114,7 @@ function addToEmail(toEmail) {
     if (toEmail.length <= 0) {
         return
     }
-    var style = toEmail.match(emailRegex) ? "valid" : "invalid"
+    var style = emailRegex.test(toEmail) ? "valid" : "invalid"
     $("<div class=\""+ style + " toEmail\" id=\"toEmail" + toEmailIndex + "\">" + toEmail + "<img class=\"iconBtn\" style=\"height: 12px; margin-left:10px; margin: auto;\" onclick=\"removeToEmail('toEmail" + toEmailIndex + "', '" + toEmail + "');\" src=\"/assets/cross.svg\"/></div>").insertBefore("#toEmailField")
     toEmailIndex++
     toEmailList.push(toEmail)

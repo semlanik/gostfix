@@ -32,6 +32,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	common "git.semlanik.org/semlanik/gostfix/common"
@@ -161,12 +164,33 @@ func (s *Storage) addEmail(user string, email string, upsert bool) error {
 		}
 	}
 
+	file, err := os.OpenFile(config.ConfigInstance().VMailboxMaps, os.O_APPEND|os.O_WRONLY, 0664)
+	if err != nil {
+		return errors.New("Unable to add email to maps" + err.Error())
+	}
+
+	emailParts := strings.Split(email, "@")
+
+	if len(emailParts) != 2 {
+		return errors.New("Invalid email format")
+	}
+
+	_, err = file.WriteString(email + " " + emailParts[1] + "/" + emailParts[0] + "\n")
+	if err != nil {
+		return errors.New("Unable to add email to maps" + err.Error())
+	}
+
+	cmd := exec.Command("postmap", config.ConfigInstance().VMailboxMaps)
+	err = cmd.Run()
+	if err != nil {
+		return errors.New("Unable to execute postmap")
+	}
+
 	_, err = s.emailsCollection.UpdateOne(context.Background(),
 		bson.M{"user": user},
 		bson.M{"$addToSet": bson.M{"email": email}},
 		options.Update().SetUpsert(upsert))
 
-	//TODO: Update postfix virtual map here
 	return err
 }
 
@@ -535,6 +559,11 @@ func (s *Storage) GetAllEmails() (emails []string, err error) {
 		}
 	}
 	return nil, err
+}
+
+func (s *Storage) CheckEmailExists(email string) bool {
+	result := s.allEmailsCollection.FindOne(context.Background(), bson.M{"emails": email})
+	return result.Err() == nil
 }
 
 func (s *Storage) GetFolders(email string) (folders []*common.Folder) {

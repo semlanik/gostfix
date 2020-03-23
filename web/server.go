@@ -66,9 +66,10 @@ type Server struct {
 	sessionStore  *sessions.CookieStore
 	storage       *db.Storage
 	Notifier      *webNotifier
+	scanner       common.Scanner
 }
 
-func NewServer() *Server {
+func NewServer(scanner common.Scanner) *Server {
 
 	storage, err := db.NewStorage()
 
@@ -84,6 +85,7 @@ func NewServer() *Server {
 		sessionStore:  sessions.NewCookieStore(make([]byte, 32)),
 		storage:       storage,
 		Notifier:      NewWebNotifier(),
+		scanner:       scanner,
 	}
 
 	return s
@@ -125,6 +127,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			s.handleLogout(w, r)
 		case "/register":
 			s.handleRegister(w, r)
+		case "/checkEmail":
+			s.handleCheckEmail(w, r)
 		case "/mail":
 			fallthrough
 		case "/setRead":
@@ -148,15 +152,31 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := r.ParseForm(); err == nil {
-		// user := r.FormValue("user")
-		// password := r.FormValue("password")
-		// fullname := r.FormValue("fullname")
+		user := r.FormValue("user")
+		password := r.FormValue("password")
+		fullname := r.FormValue("fullname")
+		if user != "" && password != "" && fullname != "" {
+			ok, email := s.checkEmail(user)
+			if ok && len(password) < 128 && len(fullname) < 128 && utils.RegExpUtilsInstance().FullnameChecker.MatchString(fullname) {
+				err := s.storage.AddUser(email, password, fullname)
+				if err != nil {
+					log.Println(err.Error())
+					s.error(http.StatusInternalServerError, "Unable to create user", w)
+					return
+				}
+
+				s.scanner.Reconfigure()
+				token, _ := s.authenticator.Authenticate(email, password)
+				s.login(email, token, w, r)
+				return
+			}
+		}
 	}
 
 	fmt.Fprint(w, s.templater.ExecuteRegister(&struct {
 		Version string
-	}{common.Version}))
-
+		Domain  string
+	}{common.Version, config.ConfigInstance().MyDomain}))
 }
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -195,6 +215,24 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	s.logout(w, r)
 	http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
+}
+
+func (s *Server) handleCheckEmail(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err == nil {
+		if ok, _ := s.checkEmail(r.FormValue("user")); ok {
+			w.Write([]byte{0})
+			return
+		}
+		s.error(http.StatusNotAcceptable, "Email exists", w)
+		return
+	}
+	s.error(http.StatusBadRequest, "Invalid arguments", w)
+	return
+}
+
+func (s *Server) checkEmail(user string) (bool, string) {
+	email := user + "@" + config.ConfigInstance().MyDomain
+	return utils.RegExpUtilsInstance().EmailChecker.MatchString(email) && !s.storage.CheckEmailExists(email), email
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {

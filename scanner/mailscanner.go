@@ -85,6 +85,10 @@ func NewMailScanner() (ms *MailScanner) {
 	return
 }
 
+func (ms *MailScanner) Reconfigure() {
+	ms.signalChannel <- SignalReconfigure
+}
+
 func (ms *MailScanner) checkEmailRegistred(email string) bool {
 	emails, err := ms.storage.GetAllEmails()
 

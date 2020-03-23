@@ -23,42 +23,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package main
+package common
 
-import (
-	sasl "git.semlanik.org/semlanik/gostfix/sasl"
-	scanner "git.semlanik.org/semlanik/gostfix/scanner"
-	web "git.semlanik.org/semlanik/gostfix/web"
-	profile "github.com/pkg/profile"
-)
-
-type GofixEngine struct {
-	scanner *scanner.MailScanner
-	web     *web.Server
-	sasl    *sasl.SaslServer
-}
-
-func NewGofixEngine() (e *GofixEngine) {
-	mailScanner := scanner.NewMailScanner()
-	e = &GofixEngine{
-		scanner: mailScanner,
-		web:     web.NewServer(mailScanner),
-		sasl:    sasl.NewSaslServer(),
-	}
-
-	e.scanner.RegisterNotifier(e.web.Notifier)
-	return
-}
-
-func (e *GofixEngine) Run() {
-	defer e.scanner.Stop()
-	e.sasl.Run()
-	e.scanner.Run()
-	e.web.Run()
-}
-
-func main() {
-	defer profile.Start().Stop()
-	engine := NewGofixEngine()
-	engine.Run()
+type Scanner interface {
+	Reconfigure()
 }
