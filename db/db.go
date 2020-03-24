@@ -37,7 +37,7 @@ import (
 
 	common "git.semlanik.org/semlanik/gostfix/common"
 	"git.semlanik.org/semlanik/gostfix/utils"
-	"github.com/jsimonetti/berkeleydb"
+	"github.com/semlanik/berkeleydb"
 	bcrypt "golang.org/x/crypto/bcrypt"
 
 	bson "go.mongodb.org/mongo-driver/bson"

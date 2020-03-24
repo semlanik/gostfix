@@ -101,6 +101,8 @@ github.com/semlanik/berkeleydb v0.0.0-20200324010442-d983bd2b507f h1:BHwg1t1/FB2
 github.com/semlanik/berkeleydb v0.0.0-20200324010442-d983bd2b507f/go.mod h1:HwjJPwsF6GOUdyxwWx1MICyYgt3ppFp2nwOkgr5XHIA=
 github.com/semlanik/berkeleydb v0.0.0-20200324010932-906a014940d9 h1:2zqdU1t/hLKuKuVZspcAUX3rhqeGAZLBj37T6We5EWk=
 github.com/semlanik/berkeleydb v0.0.0-20200324010932-906a014940d9/go.mod h1:HwjJPwsF6GOUdyxwWx1MICyYgt3ppFp2nwOkgr5XHIA=
+github.com/semlanik/berkeleydb v0.0.0-20200324082802-7b28da5446c0 h1:HL5hEne2FemTLEIvB33Yk2hpIq3agLW4z7B98kdEfaI=
+github.com/semlanik/berkeleydb v0.0.0-20200324082802-7b28da5446c0/go.mod h1:HwjJPwsF6GOUdyxwWx1MICyYgt3ppFp2nwOkgr5XHIA=
 github.com/sirupsen/logrus v1.4.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=

@@ -14,7 +14,7 @@ require (
 	github.com/jsimonetti/berkeleydb v0.0.0-20170815141343-5cde5eaaf78c
 	github.com/lyft/protoc-gen-star v0.4.14 // indirect
 	github.com/pkg/profile v1.4.0
-	github.com/semlanik/berkeleydb v0.0.0-20200324010932-906a014940d9
+	github.com/semlanik/berkeleydb v0.0.0-20200324082802-7b28da5446c0
 	github.com/spf13/afero v1.2.2 // indirect
 	go.mongodb.org/mongo-driver v1.3.0
 	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d
