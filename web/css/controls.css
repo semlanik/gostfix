@@ -334,3 +334,14 @@
     user-select: none;
 }
 
+.settingsHeader {
+    padding: var(--base-text-padding);
+    font-size: var( --huge-text-size);
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}

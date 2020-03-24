@@ -68,12 +68,16 @@ const (
 	ContinueStateCredentials
 )
 
-func NewSaslServer() *SaslServer {
+func NewSaslServer() (*SaslServer, error) {
+	authenticator, err := auth.NewAuthenticator()
+	if err != nil {
+		return nil, err
+	}
 	return &SaslServer{
 		pid:           os.Getpid(),
 		cuid:          0,
-		authenticator: auth.NewAuthenticator(),
-	}
+		authenticator: authenticator,
+	}, nil
 }
 
 func (s *SaslServer) Run() {
@@ -202,7 +206,7 @@ func (s *SaslServer) checkCredentials(credentialsBase64 string) (string, error) 
 			return login, nil
 		}
 	} else {
-		if _, ok := s.authenticator.Authenticate(login, password); ok {
+		if err := s.authenticator.CheckUser(login, password); err == nil {
 			return login, nil
 		}
 	}

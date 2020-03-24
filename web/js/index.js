@@ -493,6 +493,10 @@ function logout() {
     window.location.href = "/logout"
 }
 
+function settings() {
+    window.location.href = "/settings"
+}
+
 function connectNotifier() {
     if (notifierSocket != null) {
         return

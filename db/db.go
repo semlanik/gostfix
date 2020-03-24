@@ -137,6 +137,32 @@ func (s *Storage) AddUser(user, password, fullName string) error {
 	return nil
 }
 
+func (s *Storage) UpdateUser(user, password, fullName string) error {
+	userInfo := bson.M{}
+
+	if len(password) > 0 && len(password) < 128 {
+		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		hashString := string(hash)
+		userInfo["password"] = hashString
+	}
+
+	if len(fullName) > 0 && len(fullName) < 128 && utils.RegExpUtilsInstance().FullNameChecker.MatchString(fullName) {
+		userInfo["fullName"] = fullName
+	}
+
+	if len(userInfo) > 0 {
+		_, err := s.usersCollection.UpdateOne(context.Background(), bson.M{"user": user}, bson.M{"$set": userInfo})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (s *Storage) AddEmail(user string, email string) error {
 	return s.addEmail(user, email, false)
 }
@@ -217,128 +243,6 @@ func (s *Storage) RemoveEmail(user string, email string) error {
 	return err
 }
 
-func (s *Storage) CheckUser(user, password string) error {
-	log.Printf("Check user: %s %s", user, password)
-	result := struct {
-		User     string
-		Password string
-	}{}
-	err := s.usersCollection.FindOne(context.Background(), bson.M{"user": user}).Decode(&result)
-	if err != nil {
-		return errors.New("Invalid user or password")
-	}
-
-	if bcrypt.CompareHashAndPassword([]byte(result.Password), []byte(password)) != nil {
-		return errors.New("Invalid user or password")
-	}
-	return nil
-}
-
-func (s *Storage) AddToken(user, token string) error {
-	log.Printf("Add token: %s\n", user)
-	s.tokensCollection.UpdateOne(context.Background(),
-		bson.M{"user": user},
-		bson.M{
-			"$addToSet": bson.M{
-				"token": bson.M{
-					"token":  token,
-					"expire": time.Now().Add(time.Hour * 24).Unix(),
-				},
-			},
-		},
-		options.Update().SetUpsert(true))
-	s.CleanupTokens(user)
-	return nil
-}
-
-func (s *Storage) CheckToken(user, token string) error {
-	if token == "" {
-		return errors.New("Invalid token")
-	}
-
-	cur, err := s.tokensCollection.Aggregate(context.Background(),
-		bson.A{
-			bson.M{"$match": bson.M{"user": user}},
-			bson.M{"$unwind": "$token"},
-			bson.M{"$match": bson.M{"token.token": token}},
-		})
-
-	if err != nil {
-		log.Fatalln(err)
-		return err
-	}
-
-	ok := false
-	defer cur.Close(context.Background())
-	if cur.Next(context.Background()) {
-		result := struct {
-			Token struct {
-				Expire int64
-			}
-		}{}
-
-		err = cur.Decode(&result)
-
-		ok = err == nil && result.Token.Expire >= time.Now().Unix()
-	}
-
-	if ok {
-		//TODO: Renew token
-		return nil
-	}
-
-	return errors.New("Token expired")
-}
-
-func (s *Storage) RemoveToken(user, token string) error {
-	s.CleanupTokens(user)
-
-	_, err := s.tokensCollection.UpdateOne(context.Background(), bson.M{"user": user}, bson.M{"$pull": bson.M{"token": bson.M{"token": token}}})
-	if err != nil {
-		log.Printf("Unable to remove token %s", err)
-	}
-
-	return err
-}
-
-func (s *Storage) CleanupTokens(user string) {
-	log.Printf("Cleanup tokens: %s\n", user)
-
-	cur, err := s.tokensCollection.Aggregate(context.Background(),
-		bson.A{
-			bson.M{"$match": bson.M{"user": user}},
-			bson.M{"$unwind": "$token"},
-		})
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	type tokenMetadata struct {
-		Expire int64
-		Token  string
-	}
-
-	tokensToKeep := bson.A{}
-	defer cur.Close(context.Background())
-	for cur.Next(context.Background()) {
-		result := struct {
-			Token *tokenMetadata
-		}{
-			Token: &tokenMetadata{},
-		}
-
-		err = cur.Decode(&result)
-		if err == nil && result.Token.Expire >= time.Now().Unix() {
-			tokensToKeep = append(tokensToKeep, result.Token)
-		} else {
-			log.Printf("Expired token found for %s : %d", user, result.Token.Expire)
-		}
-	}
-
-	_, err = s.tokensCollection.UpdateOne(context.Background(), bson.M{"user": user}, bson.M{"$set": bson.M{"token": tokensToKeep}})
-	return
-}
 func (s *Storage) SaveMail(email, folder string, m *common.Mail, read bool) error {
 	result := &struct {
 		User string

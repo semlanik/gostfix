@@ -26,6 +26,8 @@
 package main
 
 import (
+	"log"
+
 	sasl "git.semlanik.org/semlanik/gostfix/sasl"
 	scanner "git.semlanik.org/semlanik/gostfix/scanner"
 	web "git.semlanik.org/semlanik/gostfix/web"
@@ -40,10 +42,14 @@ type GofixEngine struct {
 
 func NewGofixEngine() (e *GofixEngine) {
 	mailScanner := scanner.NewMailScanner()
+	saslService, err := sasl.NewSaslServer()
+	if err != nil {
+		log.Fatalf("Unable to intialize sasl server %s\n", err)
+	}
 	e = &GofixEngine{
 		scanner: mailScanner,
 		web:     web.NewServer(mailScanner),
-		sasl:    sasl.NewSaslServer(),
+		sasl:    saslService,
 	}
 
 	e.scanner.RegisterNotifier(e.web.Notifier)

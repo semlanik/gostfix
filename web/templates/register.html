@@ -8,110 +8,20 @@
         <link type="text/css" href="/css/styles.css" rel="stylesheet">
         <link type="text/css" href="/css/controls.css" rel="stylesheet">
         <script src="/js/jquery-3.4.1.min.js"></script>
+        <script src="/js/forms.js"></script>
         <script>
-            const emailRegex = /^[a-zA-Z]+[\w\d\._-]*$/
-            const passwordRegex = /[A-Z0-6!"\#$%&'()*+,\-./:;<=>?@\[\\\]^_‘{|}~]/
-            const fullnameRegex = /^[\w ]*$/
-            var emailOk = false
-
             $(document).ready(function() {
-                $('#showPasswordButton').mousedown(function() {
-                    $('#passwordField').attr('type', 'text')
-                })
+                initControls()
 
-                $('#showPasswordButton').mouseup(function() {
-                    $('#passwordField').attr('type', 'password')
-                })
-
-                validateEmail($('#userField'))
-                $('#fullnameField').on('input', validateFields)
-                $('#userField').on('input', function(e) { validateEmail($(e.target)) })
-                $('#passwordField').on('input', validateFields)
+                addValidation('#userField', '#registerForm', validateEmail)
+                addValidation('#fullNameField', '#registerForm', validateFullName)
+                addValidation('#passwordField', '#registerForm', validatePassword)
+                validateForm('#registerForm')
             })
 
-            function submitChanges() {
-                if (emailOk && validatePassword($('#passwordField')) && validateFullname($('#fullnameField'))) {
+            function register() {
+                if (validateForm('#registerForm')) {
                     $('#registerForm').submit()
-                }
-            }
-
-            var emailInputTimer = null
-            function validateEmail(element) {
-                emailOk = false
-                validateFields()
-                var fieldDiv = element.parent()
-                if (emailRegex.test(element.val())) {
-                    clearTimeout(emailInputTimer)
-                    emailInputTimer = setTimeout(emailCheck, 200)
-                    return
-                } else {
-                    fieldDiv.addClass("bad")
-                }
-            }
-
-            function emailCheck() {
-                var element = $('#userField')
-                var fieldDiv = element.parent()
-
-                $.ajax({
-                    url: "/checkEmail",
-                    data: {
-                        user: element.val()
-                    },
-                    success: function(result) {
-                        emailOk = true
-                        validateFields()
-                        fieldDiv.removeClass("bad")
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        emailOk = false
-                        validateFields()
-                        fieldDiv.addClass("bad")
-                    }
-                })
-            }
-
-            function validatePassword(element) {
-                var fieldDiv = element.parent()
-                if (validateField(element)) {
-                    if (element.val().length < 8 || !passwordRegex.test(element.val())) {
-                        fieldDiv.addClass("weak")
-                    } else {
-                        fieldDiv.removeClass("weak")
-                    }
-                    return true
-                }
-
-                return false
-            }
-
-            function validateFullname(element) {
-                var fieldDiv = element.parent()
-                if (fullnameRegex.test(element.val())) {
-                    fieldDiv.removeClass("bad")
-                    return true
-                }
-                fieldDiv.addClass("bad")
-                return false
-            }
-
-            function validateField(element) {
-                var fieldDiv = element.parent()
-                if (element.val() != '') {
-                    fieldDiv.removeClass('bad')
-                    return true
-                }
-                fieldDiv.addClass('bad')
-                return false
-            }
-
-            function validateFields() {
-                var passwordOk = validatePassword($('#passwordField'))
-                var fullnameOk = validateFullname($('#fullnameField'))
-                if (emailOk && passwordOk && fullnameOk) {
-                    $('#registerButton').removeClass('disabled')
-                } else {
-                    $('#registerButton').addClass('disabled')
                 }
             }
         </script>
@@ -123,7 +33,7 @@
                 <div style="display: flex; flex-direction: column; width: 100%; height: 100%; justify-content: center;">
                     <form id="registerForm" method="POST" action="/register" style="margin: 0 auto;">
                         <div class="inpt bad">
-                            <input id="fullnameField" name="fullname" type="text" required maxlength="128" autocomplete="off">
+                            <input id="fullNameField" name="fullName" type="text" required maxlength="128" autocomplete="off">
                             <span class="highlight"></span>
                             <span class="bar"></span>
                             <label>Full name</label>
@@ -134,14 +44,14 @@
                             <span class="bar"></span>
                             <label>User @{{.Domain}}</label>
                         </div>
-                        <div class="inpt bad">
+                        <div class="inpt password bad">
                             <input id="passwordField" name="password" type="password" required maxlength="128" autocomplete="off">
                             <span class="highlight"></span>
                             <span class="bar"></span>
                             <label>Password</label>
-                            <img id="showPasswordButton" src="/assets/eye.svg"/>
+                            <img class="icon" src="/assets/eye.svg"/>
                         </div>
-                        <div id="registerButton" class="btn materialLevel1 disabled" style="margin-bottom: 15px;" onclick="submitChanges();">Register</div>
+                        <div id="registerButton" class="btn materialLevel1 disabled" style="margin-bottom: 15px;" onclick="register();">Register</div>
                     </form>
                 </div>
             </div>

@@ -78,8 +78,13 @@ func NewServer(scanner common.Scanner) *Server {
 		return nil
 	}
 
+	authenticator, err := auth.NewAuthenticator()
+	if err != nil {
+		log.Fatalf("Unable to intialize authenticator %s", err)
+		return nil
+	}
 	s := &Server{
-		authenticator: auth.NewAuthenticator(),
+		authenticator: authenticator,
 		templater:     NewTemplater("data/templates"),
 		fileServer:    http.FileServer(http.Dir("data")),
 		sessionStore:  sessions.NewCookieStore(make([]byte, 32)),
@@ -139,6 +144,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fallthrough
 		case "/delete":
 			s.handleMailRequest(w, r)
+		case "/settings":
+			fallthrough
+		case "/update":
+			fallthrough
+		case "/admin":
+			s.handleSecureZone(w, r)
 		default:
 			http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
 		}
@@ -146,6 +157,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
+	// if session, err := s.sessionStore.Get(r, CookieSessionToken); err == nil && session.Values["user"] != nil && session.Values["token"] != nil {
+	// 	http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
+	// 	return
+	// }
 	if !config.ConfigInstance().RegistrationEnabled {
 		s.error(http.StatusNotImplemented, "Registration is disabled on this server", w)
 		return
@@ -154,11 +169,11 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err == nil {
 		user := r.FormValue("user")
 		password := r.FormValue("password")
-		fullname := r.FormValue("fullname")
-		if user != "" && password != "" && fullname != "" {
+		fullName := r.FormValue("fullName")
+		if user != "" && password != "" && fullName != "" {
 			ok, email := s.checkEmail(user)
-			if ok && len(password) < 128 && len(fullname) < 128 && utils.RegExpUtilsInstance().FullnameChecker.MatchString(fullname) {
-				err := s.storage.AddUser(email, password, fullname)
+			if ok && len(password) < 128 && len(fullName) < 128 && utils.RegExpUtilsInstance().FullNameChecker.MatchString(fullName) {
+				err := s.storage.AddUser(email, password, fullName)
 				if err != nil {
 					log.Println(err.Error())
 					s.error(http.StatusInternalServerError, "Unable to create user", w)
@@ -166,7 +181,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 				}
 
 				s.scanner.Reconfigure()
-				token, _ := s.authenticator.Authenticate(email, password)
+				token, _ := s.authenticator.Login(email, password)
 				s.login(email, token, w, r)
 				return
 			}
@@ -184,7 +199,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err == nil {
 		user := r.FormValue("user")
 		password := r.FormValue("password")
-		token, ok := s.authenticator.Authenticate(user, password)
+		token, ok := s.authenticator.Login(user, password)
 		if ok {
 			s.login(user, token, w, r)
 			return
@@ -236,12 +251,10 @@ func (s *Server) checkEmail(user string) (bool, string) {
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("logout")
-
 	session, err := s.sessionStore.Get(r, CookieSessionToken)
 	if err == nil {
 		if session.Values["user"] != nil && session.Values["token"] != nil {
-			s.storage.RemoveToken(session.Values["user"].(string), session.Values["token"].(string))
+			s.authenticator.Logout(session.Values["user"].(string), session.Values["token"].(string))
 		}
 		session.Values["user"] = ""
 		session.Values["token"] = ""

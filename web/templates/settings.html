@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <link rel="icon" href="/assets/logo.png">
+        <link href="https://fonts.googleapis.com/css?family=Titillium+Web&display=swap" rel="stylesheet">
+        <link type="text/css" href="/css/index.css" rel="stylesheet">
+        <link type="text/css" href="/css/styles.css" rel="stylesheet">
+        <link type="text/css" href="/css/controls.css" rel="stylesheet">
+        <script src="/js/jquery-3.4.1.min.js"></script>
+        <script src="/js/forms.js"></script>
+        <script>
+            $(document).ready(function() {
+                initControls()
+
+                addValidation('#fullNameField', null, validateFullName)
+                addValidation('#passwordField', null, validatePassword)
+            })
+
+            function update() {
+                var formValue = $('#updateForm').serialize()
+                $.ajax({
+                    url: "/update",
+                    data: formValue,
+                    success: function(result) {
+                        console.log("update ok")
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log("Update failed: " + textStatus)
+                    }
+                })
+            }
+
+            function back() {
+                window.history.back();
+            }
+        </script>
+        <title>Gostfix mail {{.Version}}</title>
+    </head>
+    <body>
+        <div id="main">
+            <div class="horizontalPaddingBox">
+                <div class="contentBox">
+                    <div class="leftPanel">
+                        <div class="folderBtn" onclick="back();">Back</div>
+                        <div class="folderBtn">User settings</div>
+                    </div>
+                    <div class="verticalPaddingBox">
+                        <div class="innerConentBox materialLevel1">
+                            <div style="flex: 1 1 auto; display: flex; flex-direction: column;">
+                                <div class="settingsHeader">
+                                    User settings
+                                </div>
+                                <form id="updateForm" style="margin: 0 auto;">
+                                    <div class="inpt bad">
+                                        <input id="fullNameField" name="fullName" type="text" required maxlength="128" autocomplete="off" value="{{.FullName}}">
+                                        <span class="highlight"></span>
+                                        <span class="bar"></span>
+                                        <label>Full name</label>
+                                    </div>
+                                    <div class="inpt password bad">
+                                        <input id="passwordField" name="password" type="password" required maxlength="128" autocomplete="off">
+                                        <span class="highlight"></span>
+                                        <span class="bar"></span>
+                                        <label>New password</label>
+                                        <img class="icon" src="/assets/eye.svg"/>
+                                    </div>
+                                    <div class="inpt">
+                                        <input id="oldPasswordField" name="oldPassword" type="password" required maxlength="128" autocomplete="off">
+                                        <span class="highlight"></span>
+                                        <span class="bar"></span>
+                                        <label>Old password</label>
+                                    </div>
+                                    <div id="updateButton" class="btn materialLevel1" style="margin-bottom: 30px;" onclick="update();">Update</div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="copyrightBox" class="elidedText"><img src="/assets/logo.svg" height="30px"/>gostfix {{.Version}} Web interface. Copyright (c) 2020 Alexey Edelev &lt;semlanik@gmail.com&gt;</div>
+        </div>
+    </body>
+</html>
