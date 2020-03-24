@@ -9,7 +9,7 @@
             <img id="readIcon{{.MailId}}" class="iconBtn" style="width: 20px; margin-right: 10px;" onclick="toggleRead('{{.MailId}}', 'readIcon');" src="/assets/read.svg"/>
             <img id="restoreIcon" class="iconBtn" style="display:{{if .Trash}}block{{else}}none{{end}}; width: 20px; margin-right: 10px;" onclick="restoreMail({{.MailId}}, closeDetails);" src="/assets/restore.svg"/>
             <img id="deleteIcon" class="iconBtn" style="width: 20px; margin-right: 10px;" onclick="removeMail({{.MailId}}, closeDetails);" src="/assets/remove.svg"/>
-            <img class="iconBtn" style="width: 20px; margin-left:10px; margin-right: 10px;" onclick="closeDetails();" src="/assets/back.svg"/>
+            <img class="iconBtn" style="width: 20px; height: 20px; margin-left:10px;" onclick="closeDetails();" src="/assets/back.svg"/>
         </div>
     </div>
     <div id="mailBody" class="contentArea horizontalPaddingBox">

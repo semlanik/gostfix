@@ -146,6 +146,11 @@
     height: 24px;
 }
 
+.inpt img:hover {
+    cursor: pointer;
+}
+
+
 .inpt input:focus ~ label {
     top: -25px;
     font-size: var(--normal-text-size);
