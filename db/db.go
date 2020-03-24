@@ -32,12 +32,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
-	"os/exec"
 	"strings"
 	"time"
 
 	common "git.semlanik.org/semlanik/gostfix/common"
+	"git.semlanik.org/semlanik/gostfix/utils"
+	"github.com/jsimonetti/berkeleydb"
 	bcrypt "golang.org/x/crypto/bcrypt"
 
 	bson "go.mongodb.org/mongo-driver/bson"
@@ -134,7 +134,6 @@ func (s *Storage) AddUser(user, password, fullName string) error {
 		return err
 	}
 
-	//TODO: Update postfix virtual map here
 	return nil
 }
 
@@ -164,26 +163,26 @@ func (s *Storage) addEmail(user string, email string, upsert bool) error {
 		}
 	}
 
-	file, err := os.OpenFile(config.ConfigInstance().VMailboxMaps, os.O_APPEND|os.O_WRONLY, 0664)
-	if err != nil {
-		return errors.New("Unable to add email to maps" + err.Error())
-	}
-
 	emailParts := strings.Split(email, "@")
 
 	if len(emailParts) != 2 {
 		return errors.New("Invalid email format")
 	}
 
-	_, err = file.WriteString(email + " " + emailParts[1] + "/" + emailParts[0] + "\n")
+	db, err := berkeleydb.NewDB()
 	if err != nil {
-		return errors.New("Unable to add email to maps" + err.Error())
+		log.Fatal(err)
 	}
 
-	cmd := exec.Command("postmap", config.ConfigInstance().VMailboxMaps)
-	err = cmd.Run()
+	err = db.Open(config.ConfigInstance().VMailboxMaps, berkeleydb.DbHash, 0)
 	if err != nil {
-		return errors.New("Unable to execute postmap")
+		log.Fatalf("Unable to open virtual mailbox maps %s %s\n", config.ConfigInstance().VMailboxMaps, err)
+	}
+	defer db.Close()
+
+	err = db.Put(email, emailParts[1]+"/"+emailParts[0])
+	if err != nil {
+		return errors.New("Unable to add email to maps" + err.Error())
 	}
 
 	_, err = s.emailsCollection.UpdateOne(context.Background(),
@@ -196,11 +195,25 @@ func (s *Storage) addEmail(user string, email string, upsert bool) error {
 
 func (s *Storage) RemoveEmail(user string, email string) error {
 
-	_, err := s.emailsCollection.UpdateOne(context.Background(),
+	db, err := berkeleydb.NewDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = db.Open(config.ConfigInstance().VMailboxMaps, berkeleydb.DbHash, 0)
+	if err != nil {
+		log.Fatalf("Unable to open virtual mailbox maps %s %s\n", config.ConfigInstance().VMailboxMaps, err)
+	}
+	defer db.Close()
+
+	err = db.Delete(email)
+	if err != nil {
+		return errors.New("Unable to remove email from maps" + err.Error())
+	}
+
+	_, err = s.emailsCollection.UpdateOne(context.Background(),
 		bson.M{"user": user},
 		bson.M{"$pull": bson.M{"email": email}})
-
-	//TODO: Update postfix virtual map here
 	return err
 }
 
@@ -574,4 +587,61 @@ func (s *Storage) GetFolders(email string) (folders []*common.Folder) {
 		&common.Folder{Name: common.Spam, Custom: false},
 	}
 	return
+}
+
+func (s *Storage) ReadEmailMaps() (map[string]string, error) {
+	registredEmails, err := s.GetAllEmails()
+	if err != nil {
+		return nil, err
+	}
+
+	mailPath := config.ConfigInstance().VMailboxBase
+
+	mapsFile := config.ConfigInstance().VMailboxMaps
+	if !utils.FileExists(mapsFile) {
+		return nil, errors.New("Could not read virtual mailbox maps")
+	}
+
+	db, err := berkeleydb.NewDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = db.Open(config.ConfigInstance().VMailboxMaps, berkeleydb.DbHash, berkeleydb.DbRdOnly)
+	if err != nil {
+		return nil, errors.New("Unable to open virtual mailbox maps " + mapsFile + " " + err.Error())
+	}
+	defer db.Close()
+
+	cursor, err := db.Cursor()
+	if err != nil {
+		return nil, errors.New("Unable to read virtual mailbox maps " + mapsFile + " " + err.Error())
+	}
+
+	emailMaps := make(map[string]string)
+
+	for true {
+		email, path, dberr := cursor.GetNext()
+		if dberr != nil {
+			break
+		}
+		found := false
+		for _, registredEmail := range registredEmails {
+			if email == registredEmail {
+				found = true
+			}
+		}
+		if !found {
+			return nil, errors.New("Found non-registred mailbox <" + email + "> in mail maps. Database has inconsistancy")
+		}
+		emailMaps[email] = mailPath + "/" + path
+	}
+
+	for _, registredEmail := range registredEmails {
+		if _, exists := emailMaps[registredEmail]; !exists {
+			return nil, errors.New("Found existing mailbox <" + registredEmail + "> in database. Mail maps has inconsistancy")
+		}
+	}
+
+	return emailMaps, nil
 }

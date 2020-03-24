@@ -60,6 +60,8 @@ github.com/jaytaylor/html2text v0.0.0-20190408195923-01ec452cbe43/go.mod h1:CVKl
 github.com/jhillyerd/enmime v0.8.0 h1:PHc/2LXtnDmCDm0V4+5NlBx+MoubmufhuNXwpKSV2o8=
 github.com/jhillyerd/enmime v0.8.0/go.mod h1:MBHs3ugk03NGjMM6PuRynlKf+HA5eSillZ+TRCm73AE=
 github.com/joho/godotenv v1.3.0/go.mod h1:7hK45KPybAkOC6peb+G5yklZfMxEjkZhHbwpqxOKXbg=
+github.com/jsimonetti/berkeleydb v0.0.0-20170815141343-5cde5eaaf78c h1:/5ja7kk4aMhLJiRTtOhbPYLb9Y95VlqFiRTAoIhrHI4=
+github.com/jsimonetti/berkeleydb v0.0.0-20170815141343-5cde5eaaf78c/go.mod h1:MzZzsYRTOJXLM04/edhWq3Y89ktkIWH0OcenhMCSHfs=
 github.com/karrick/godirwalk v1.8.0/go.mod h1:H5KPZjojv4lE+QYImBI8xVtrBRgYrIVsaRPx4tDPEn4=
 github.com/karrick/godirwalk v1.10.3/go.mod h1:RoGL9dQei4vP9ilrpETWE8CLOZ1kiN0LhBygSwrAsHA=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
@@ -91,6 +93,14 @@ github.com/rogpeppe/go-internal v1.1.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFR
 github.com/rogpeppe/go-internal v1.2.2/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca/go.mod h1:uugorj2VCxiV1x+LzaIdVa9b4S4qGAcH6cbhh4qVxOU=
+github.com/semlanik/berkeleydb v0.0.0-20200324005721-8981f6974e5f h1:9RyoumR7T4Q4tIp3Y3t3h47m8KYVdHKQm5UJCK5Fk1A=
+github.com/semlanik/berkeleydb v0.0.0-20200324005721-8981f6974e5f/go.mod h1:HwjJPwsF6GOUdyxwWx1MICyYgt3ppFp2nwOkgr5XHIA=
+github.com/semlanik/berkeleydb v0.0.0-20200324005859-f1ad1141be4d h1:WYw+xVcv5XgzS+dVRp56ydK697rrtB7JhQkC1W5erpo=
+github.com/semlanik/berkeleydb v0.0.0-20200324005859-f1ad1141be4d/go.mod h1:HwjJPwsF6GOUdyxwWx1MICyYgt3ppFp2nwOkgr5XHIA=
+github.com/semlanik/berkeleydb v0.0.0-20200324010442-d983bd2b507f h1:BHwg1t1/FB2JKTS4pXaNs6lPlG+xftf/jqZtTbnKYrs=
+github.com/semlanik/berkeleydb v0.0.0-20200324010442-d983bd2b507f/go.mod h1:HwjJPwsF6GOUdyxwWx1MICyYgt3ppFp2nwOkgr5XHIA=
+github.com/semlanik/berkeleydb v0.0.0-20200324010932-906a014940d9 h1:2zqdU1t/hLKuKuVZspcAUX3rhqeGAZLBj37T6We5EWk=
+github.com/semlanik/berkeleydb v0.0.0-20200324010932-906a014940d9/go.mod h1:HwjJPwsF6GOUdyxwWx1MICyYgt3ppFp2nwOkgr5XHIA=
 github.com/sirupsen/logrus v1.4.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=

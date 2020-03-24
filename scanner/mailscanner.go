@@ -26,11 +26,9 @@
 package scanner
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"sync"
 
 	"git.semlanik.org/semlanik/gostfix/common"
@@ -105,56 +103,12 @@ func (ms *MailScanner) checkEmailRegistred(email string) bool {
 	return false
 }
 
-func (ms *MailScanner) readEmailMaps() {
-	registredEmails, err := ms.storage.GetAllEmails()
+func (ms *MailScanner) reconfigure() {
+	var err error
+	ms.emailMaps, err = ms.storage.ReadEmailMaps()
 	if err != nil {
-		log.Fatal(err)
-		return
+		log.Fatal(err.Error())
 	}
-
-	mailPath := config.ConfigInstance().VMailboxBase
-
-	emailMaps := make(map[string]string)
-	mapsFile := config.ConfigInstance().VMailboxMaps
-	if !utils.FileExists(mapsFile) {
-		log.Fatal("Could not read virtual mailbox maps")
-		return
-	}
-
-	file, err := os.Open(mapsFile)
-	if err != nil {
-		log.Fatalf("Unable to open virtual mailbox maps %s\n", mapsFile)
-	}
-
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		emailMapPair := strings.Split(scanner.Text(), " ")
-		if len(emailMapPair) != 2 {
-			log.Printf("Invalid record in virtual mailbox maps %s\n", scanner.Text())
-			continue
-		}
-
-		found := false
-		email := emailMapPair[0]
-		for _, registredEmail := range registredEmails {
-			if email == registredEmail {
-				found = true
-			}
-		}
-		if !found {
-			log.Fatalf("Found non-registred mailbox <%s> in mail maps. Database has inconsistancy.\n", email)
-			return
-		}
-		emailMaps[email] = mailPath + "/" + emailMapPair[1]
-	}
-
-	for _, registredEmail := range registredEmails {
-		if _, exists := emailMaps[registredEmail]; !exists {
-			log.Fatalf("Found existing mailbox <%s> in database. Mail maps has inconsistancy.\n", registredEmail)
-		}
-	}
-	ms.emailMaps = emailMaps
 
 	for mailbox, mailPath := range ms.emailMaps {
 		if !utils.FileExists(mailPath) {
@@ -183,14 +137,14 @@ func (ms *MailScanner) readEmailMaps() {
 
 func (ms *MailScanner) Run() {
 	go func() {
-		ms.readEmailMaps()
+		ms.reconfigure()
 
 		for {
 			select {
 			case signal := <-ms.signalChannel:
 				switch signal {
 				case SignalReconfigure:
-					ms.readEmailMaps()
+					ms.reconfigure()
 				}
 			case event, ok := <-ms.watcher.Events:
 				if !ok {

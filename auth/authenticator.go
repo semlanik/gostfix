@@ -26,20 +26,15 @@
 package auth
 
 import (
-	"bufio"
 	"log"
-	"os"
-	"strings"
 
-	config "git.semlanik.org/semlanik/gostfix/config"
 	db "git.semlanik.org/semlanik/gostfix/db"
 	utils "git.semlanik.org/semlanik/gostfix/utils"
 	uuid "github.com/google/uuid"
 )
 
 type Authenticator struct {
-	storage  *db.Storage
-	mailMaps map[string]string //TODO: temporary here. Later should be part of mailscanner and never accessed from here
+	storage *db.Storage
 }
 
 func NewAuthenticator() (a *Authenticator) {
@@ -51,8 +46,7 @@ func NewAuthenticator() (a *Authenticator) {
 	}
 
 	a = &Authenticator{
-		mailMaps: readMailMaps(), //TODO: temporary here. Later should be part of mailscanner and never accessed from here
-		storage:  storage,
+		storage: storage,
 	}
 	return
 }
@@ -77,34 +71,4 @@ func (a *Authenticator) Verify(user, token string) bool {
 	}
 
 	return a.storage.CheckToken(user, token) == nil
-}
-
-func (a *Authenticator) MailPath(user string) string { //TODO: temporary here. Later should be part of mailscanner and never accessed from here
-	return a.mailMaps[user]
-}
-
-func readMailMaps() map[string]string { //TODO: temporary here. Later should be part of mailscanner and never accessed from here
-	mailMaps := make(map[string]string)
-	mapsFile := config.ConfigInstance().VMailboxMaps
-	if !utils.FileExists(mapsFile) {
-		return mailMaps
-	}
-
-	file, err := os.Open(mapsFile)
-	if err != nil {
-		log.Fatalf("Unable to open virtual mailbox maps %s\n", mapsFile)
-	}
-
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		mailPathPair := strings.Split(scanner.Text(), " ")
-		if len(mailPathPair) != 2 {
-			log.Printf("Invalid record in virtual mailbox maps %s", scanner.Text())
-			continue
-		}
-		mailMaps[mailPathPair[0]] = mailPathPair[1]
-	}
-
-	return mailMaps
 }

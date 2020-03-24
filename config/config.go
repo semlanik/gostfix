@@ -118,7 +118,7 @@ func newConfig() (config *gostfixConfig, err error) {
 		return
 	}
 
-	if !utils.FileExists(mapsList[1]) {
+	if !utils.FileExists(mapsList[1] + ".db") {
 		log.Fatalf("Virtual mailbox map %s doesn't exist, postfix is not configured proper way, check %s in %s\n", mapsList[1], PostfixKeyVirtualMailboxMaps, postfixConfigPath)
 		return
 	}
@@ -164,7 +164,7 @@ func newConfig() (config *gostfixConfig, err error) {
 	config = &gostfixConfig{
 		MyDomain:            myDomain,
 		VMailboxBase:        baseDir,
-		VMailboxMaps:        mapsList[1],
+		VMailboxMaps:        mapsList[1] + ".db",
 		VMailboxDomains:     validDomains,
 		MongoUser:           mongoUser,
 		MongoPassword:       mongoPassword,
