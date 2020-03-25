@@ -198,6 +198,9 @@ function requestMail(mailId) {
             },
             success: function(result) {
                 currentMail = mailId
+                if ($("#readListIcon"+mailId)) {
+                    $("#readListIcon"+mailId).attr("src", "/assets/read.svg")
+                }
                 $("#mail"+mailId).removeClass("unread")
                 $("#mail"+mailId).addClass("read")
                 $("#mailDetails").html(result);
