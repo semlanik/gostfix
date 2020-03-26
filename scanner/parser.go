@@ -28,13 +28,14 @@ package scanner
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"encoding/hex"
-	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"mime/quotedprintable"
 	"os"
 	"strings"
-	"time"
 
 	"net/mail"
 
@@ -59,13 +60,14 @@ const (
 )
 
 type parseData struct {
-	state            int
-	mandatoryHeaders int
-	previousHeader   *string
-	email            *common.Mail
-	bodyContentType  string
-	bodyData         string
-	activeBoundary   string
+	state                   int
+	mandatoryHeaders        int
+	previousHeader          *string
+	email                   *common.Mail
+	contentTransferEncoding string
+	bodyContentType         string
+	bodyData                string
+	activeBoundary          string
 }
 
 func (pd *parseData) reset() {
@@ -91,8 +93,6 @@ func parseFile(file *utils.LockedFile) []*common.Mail {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		log.Println("Scan next line")
-
 		currentText := scanner.Text()
 		if utils.RegExpUtilsInstance().MailIndicator.MatchString(currentText) {
 			if pd.mandatoryHeaders == AllHeaderMask {
@@ -116,30 +116,24 @@ func parseFile(file *utils.LockedFile) []*common.Mail {
 						pd.activeBoundary = ""
 					}
 					pd.state = StateBodyScan
+					//Header postprocessing
+					address, err := mail.ParseAddress(pd.email.Header.From)
+					if err == nil {
+						pd.email.Header.From = address.Name + "<" + address.Address + ">"
+					} else {
+						fmt.Printf("Unable to parse from email: %s", err)
+					}
 				}
 			} else {
 				pd.parseHeader(currentText)
 			}
 		case StateBodyScan:
-			// if currentText == "" {
-			// 	if pd.state == StateBodyScan && pd.activeBoundary == "" {
-			// 		if pd.mandatoryHeaders == AllHeaderMask {
-			// 			pd.parseBody()
-			// 			emails = append(emails, pd.email)
-			// 		}
-			// 		pd.reset()
-			// 		continue
-			// 	}
-			// }
-
-			// if pd.activeBoundary != "" {
 			pd.bodyData += currentText + "\n"
 			capture := utils.RegExpUtilsInstance().BoundaryEndFinder.FindStringSubmatch(currentText)
 			if len(capture) == 2 && pd.activeBoundary == capture[1] {
 				pd.state = StateBodyScan
 				pd.activeBoundary = ""
 			}
-			// }
 		}
 	}
 
@@ -155,6 +149,7 @@ func parseFile(file *utils.LockedFile) []*common.Mail {
 
 func (pd *parseData) parseHeader(headerRaw string) {
 	capture := utils.RegExpUtilsInstance().HeaderFinder.FindStringSubmatch(headerRaw)
+	encoded := false
 	//Parse header
 	if len(capture) == 3 {
 		// fmt.Printf("capture Header %s : %s\n", strings.ToLower(capture[0]), strings.ToLower(capture[1]))
@@ -178,17 +173,20 @@ func (pd *parseData) parseHeader(headerRaw string) {
 			pd.previousHeader = &pd.email.Header.Bcc
 			pd.mandatoryHeaders |= ToHeaderMask
 		case "subject":
+			encoded = true
 			pd.previousHeader = &pd.email.Header.Subject
 		case "date":
 			pd.previousHeader = nil
 
-			unixTime, err := mail.ParseDate(strings.Trim(capture[2], " \t")) //parseDate(strings.Trim(capture[2], " \t"))
+			unixTime, err := mail.ParseDate(strings.Trim(capture[2], " \t"))
 			if err == nil {
 				pd.email.Header.Date = unixTime.Unix()
 				pd.mandatoryHeaders |= DateHeaderMask
 			} else {
 				log.Printf("Unable to parse message: %s\n", err)
 			}
+		case "content-transfer-encoding":
+			pd.previousHeader = &pd.contentTransferEncoding
 		case "content-type":
 			pd.previousHeader = &pd.bodyContentType
 		default:
@@ -197,6 +195,9 @@ func (pd *parseData) parseHeader(headerRaw string) {
 
 		if pd.previousHeader != nil {
 			*pd.previousHeader = strings.Trim(capture[2], " \t")
+			if encoded {
+				*pd.previousHeader = decodeEncoded(*pd.previousHeader)
+			}
 		}
 		return
 	}
@@ -204,12 +205,12 @@ func (pd *parseData) parseHeader(headerRaw string) {
 	//Parse folding
 	capture = utils.RegExpUtilsInstance().FoldingFinder.FindStringSubmatch(headerRaw)
 	if len(capture) == 2 && pd.previousHeader != nil {
-		*pd.previousHeader += capture[1]
+		*pd.previousHeader += decodeEncoded(strings.Trim(capture[1], " \t"))
 	}
 }
 
 func (pd *parseData) parseBody() {
-	buffer := bytes.NewBufferString("content-type:" + pd.bodyContentType + "\n\n" + pd.bodyData)
+	buffer := bytes.NewBufferString("content-transfer-encoding: " + pd.contentTransferEncoding + "\ncontent-type: " + pd.bodyContentType + "\n\n" + pd.bodyData)
 	en, err := enmime.ReadEnvelope(buffer)
 	if err != nil {
 		log.Printf("Unable to read mail body %s\n\nBody content: %s\n\n", err, pd.bodyData)
@@ -239,21 +240,37 @@ func (pd *parseData) parseBody() {
 	}
 }
 
-func parseDate(stringDate string) (int64, error) {
-	formatsToTest := []string{
-		"Mon, _2 Jan 2006 15:04:05 -0700",
-		time.RFC1123Z,
-		time.RFC1123,
-		time.UnixDate,
-		"Mon,  _2 Jan 2006 15:04:05 -0700 (MST)",
-		"Mon, _2 Jan 2006 15:04:05 -0700 (MST)"}
-	var err error
-	for _, format := range formatsToTest {
-		dateTime, err := time.Parse(format, stringDate)
-		if err == nil {
-			return dateTime.Unix(), nil
+func decodeEncoded(dataEncoded string) string {
+	dataParts := utils.RegExpUtilsInstance().EncodedStringFinder.FindAllString(dataEncoded, -1)
+	if len(dataParts) <= 0 {
+		return dataEncoded
+	}
+
+	var decodedBuffer []byte
+	for _, headerPart := range dataParts {
+		headerPart = headerPart[2 : len(headerPart)-2]
+		headerPartParts := strings.Split(headerPart, "?")
+		if len(headerPartParts) == 3 {
+			switch strings.ToLower(headerPartParts[1]) {
+			case "b":
+				fmt.Printf("Decode base64: %s\n", headerPartParts[2])
+				decodedBase64, err := base64.StdEncoding.DecodeString(headerPartParts[2])
+				if err == nil {
+					decodedBuffer = append(decodedBuffer, decodedBase64...)
+				}
+			case "q":
+				decodedQuotedPrintable, err := ioutil.ReadAll(quotedprintable.NewReader(strings.NewReader(headerPartParts[2])))
+				if err == nil {
+					decodedBuffer = append(decodedBuffer, decodedQuotedPrintable...)
+				}
+			default:
+			}
 		}
 	}
 
-	return 0, errors.New("Invalid date format " + stringDate + " , " + err.Error())
+	if len(decodedBuffer) > 0 {
+		//TODO: check encoding here
+		return string(decodedBuffer)
+	}
+	return dataEncoded
 }

@@ -38,6 +38,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"git.semlanik.org/semlanik/gostfix/auth"
 	"github.com/google/uuid"
@@ -104,6 +105,8 @@ func (s *SaslServer) Run() {
 }
 
 func (s *SaslServer) handleRequest(conn net.Conn) {
+	conn.SetReadDeadline(time.Time{})
+
 	connectionReader := bufio.NewReader(conn)
 	continueState := ContinueStateNone
 	for {

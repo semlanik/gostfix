@@ -40,6 +40,7 @@ const (
 	BoundaryRegExp      = "boundary=\"(.*)\""
 	MailboxRegExp       = "^/m(\\d+)/?(.*)"
 	FullNameRegExp      = "^[\\w]+[\\w ]*$"
+	EncodedStringRegExp = "=\\?.+\\?="
 )
 
 const (
@@ -74,6 +75,7 @@ type regExpUtils struct {
 	BoundaryFinder      *regexp.Regexp
 	MailboxFinder       *regexp.Regexp
 	FullNameChecker     *regexp.Regexp
+	EncodedStringFinder *regexp.Regexp
 }
 
 func newRegExpUtils() (*regExpUtils, error) {
@@ -137,6 +139,12 @@ func newRegExpUtils() (*regExpUtils, error) {
 		return nil, err
 	}
 
+	encodedString, err := regexp.Compile(EncodedStringRegExp)
+	if err != nil {
+		log.Fatalf("Invalid regexp %s\n", err)
+		return nil, err
+	}
+
 	ru := &regExpUtils{
 		MailIndicator:       mailIndicator,
 		EmailChecker:        emailChecker,
@@ -148,6 +156,7 @@ func newRegExpUtils() (*regExpUtils, error) {
 		DomainChecker:       domainChecker,
 		MailboxFinder:       mailboxFinder,
 		FullNameChecker:     fullNameChecker,
+		EncodedStringFinder: encodedString,
 	}
 
 	return ru, nil
