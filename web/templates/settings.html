@@ -9,6 +9,7 @@
         <link type="text/css" href="/css/controls.css" rel="stylesheet">
         <script src="/js/jquery-3.4.1.min.js"></script>
         <script src="/js/forms.js"></script>
+        <script src="/js/notifications.js"></script>
         <script>
             $(document).ready(function() {
                 initControls()
@@ -23,10 +24,10 @@
                     url: "/update",
                     data: formValue,
                     success: function(result) {
-                        console.log("update ok")
+                        showToast(Severity.Normal, "User information updated successfully")
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
-                        console.log("Update failed: " + textStatus)
+                        showToast(Severity.Warning, "Unable to udapte user information: " + errorThrown + " " + textStatus)
                     }
                 })
             }

@@ -131,3 +131,10 @@ body {
     margin: 8px 0;
     font-size: var(--normal-text-size);
 }
+
+.toast {
+    background-color: var(--bg-color);
+    box-shadow: var(--level2-shadow);
+    border-bottom-left-radius: var(--default-radius);
+    border-bottom-right-radius: var(--default-radius);
+}

@@ -210,6 +210,7 @@ function requestMail(mailId) {
             error: function(jqXHR, textStatus, errorThrown) {
                 $("#mailDetails").html(textStatus)
                 setDetailsVisible(true)
+                showToast(Severity.Critical, "Unable to open mail: " + errorThrown + " " + textStatus)
             }
         })
     }
@@ -232,7 +233,7 @@ function loadFolders() {
             $("#folders").html(folderList.html)
         },
         error: function(jqXHR, textStatus, errorThrown) {
-            //TODO: some toast message here once implemented
+            showToast(Severity.Critical, "Unable to update folder list: " + errorThrown + " " + textStatus)
         }
     })
 }
@@ -254,7 +255,7 @@ function folderStat(folder) {
             }
         },
         error: function(jqXHR, textStatus, errorThrown) {
-            //TODO: some toast message here once implemented
+            showToast(Severity.Critical, "Unable to update folder list: " + errorThrown + " " + textStatus)
         }
     })
 }
@@ -274,7 +275,7 @@ function loadStatusLine() {
             $("#statusLine").html(result)
         },
         error: function(jqXHR, textStatus, errorThrown) {
-            //TODO: some toast message here once implemented
+            showToast(Severity.Critical, "Unable to load status line: " + errorThrown + " " + textStatus)
         }
     })
 }
@@ -485,9 +486,10 @@ function sendNewMail(force) {
             $("#newMailSubject").val("")
             $("#newMailTo").val("")
             closeMailNew()
+            showToast(Severity.Normal, "Email succesfully send")
         },
         error: function(jqXHR, textStatus, errorThrown) {
-            //TODO: some toast message here once implemented
+            showToast(Severity.Critical, "Unable to send email: " + errorThrown + " " + textStatus)
         }
     })
 }
@@ -510,15 +512,11 @@ function connectNotifier() {
         protocol = "ws://"
     }
     notifierSocket = new WebSocket(protocol + window.location.host + mailbox + "/notifierSubscribe")
-    notifierSocket.onopen = function() {
-    };
     notifierSocket.onmessage = function (e) {
         for (var i = 0; i < folders.length; i++) {
             folderStat(folders[i])
         }
         updateMailList(currentFolder, currentPage)
-    }
-    notifierSocket.onclose = function () {
     }
 }
 

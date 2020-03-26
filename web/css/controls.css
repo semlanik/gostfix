@@ -350,3 +350,47 @@
     -ms-user-select: none;
     user-select: none;
 }
+
+.toast {
+    position: absolute;
+    top: 0;
+    left:0;
+    right:0;
+    padding: var(--base-text-padding);
+    text-align: center;
+}
+
+.toast.visible {
+    opacity: 1;
+    visibility: visible;
+    transition: visibility 0s, opacity 0.5s linear;
+    -webkit-transition: visibility 0s, opacity 0.5s linear;
+    -moz-transition: visibility 0s, opacity 0.5s linear;
+    -o-transition: visibility 0s, opacity 0.5s linear;
+    -ms-transition: visibility 0s, opacity 0.5s linear;
+}
+
+.toast.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transition: visibility 0.5s, opacity 0.5s linear;
+    -webkit-transition: visibility 0.5s, opacity 0.5s linear;
+    -moz-transition: visibility 0.5s, opacity 0.5s linear;
+    -o-transition: visibility 0.5s, opacity 0.5s linear;
+    -ms-transition: visibility 0.5s, opacity 0.5s linear;
+}
+
+.toast.normal {
+    background-color: var(--primary-color);
+    color: var(--secondary-text-color);
+}
+
+.toast.warning {
+    background-color: var(--invalid-color);
+    color: var(--primary-text-color);
+}
+
+.toast.critical {
+    background-color: var(--bad-color);
+    color: var(--secondary-text-color);
+}
