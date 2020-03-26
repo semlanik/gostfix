@@ -520,9 +520,12 @@ function connectNotifier() {
     }
 }
 
-window.onbeforeunload = function() {
+$(window).on('beforeunload', function(){
     if (notifierSocket != null) {
-        notifierSocket.onclose = function () {}; // disable onclose handler first
         notifierSocket.close();
+        notifierSocket = null
     }
+});
+
+window.onbeforeunload = function() {
 };
