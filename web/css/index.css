@@ -186,7 +186,6 @@ html, body {
 }
 
 .contentArea {
-    font-family: Dejavu Sans;
     border-radius: var(--default-radius);
     border: 1px solid var(--primary-color);
 }

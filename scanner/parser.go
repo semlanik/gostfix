@@ -119,7 +119,11 @@ func parseFile(file *utils.LockedFile) []*common.Mail {
 					//Header postprocessing
 					address, err := mail.ParseAddress(pd.email.Header.From)
 					if err == nil {
-						pd.email.Header.From = address.Name + "<" + address.Address + ">"
+						pd.email.Header.From = address.Address
+
+						if len(address.Name) > 0 {
+							pd.email.Header.From = fmt.Sprintf("\"%s\" <%s>", address.Name, address.Address)
+						}
 					} else {
 						fmt.Printf("Unable to parse from email: %s", err)
 					}
