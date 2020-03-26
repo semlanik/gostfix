@@ -2,9 +2,9 @@
     <div class="horizontalPaddingBox" style="flex-grow: 0!important;">
         <div style="width: 100%; display: flex; flex-direction: row;">
             <div class="elidedText" style="display: block; flex: 1 1 auto;">
+                <span class="primaryText" style="font-size: var(--big-text-size);">{{.Subject}}</span></br></br>
                 <span class="primaryText"><span class="noselect">From: </span>{{.From}}</span></br>
                 <span class="secondaryText"><span class="noselect">To: </span>{{.To}}</span></br>
-                <span class="primaryText"><span class="noselect">Subject: </span>{{.Subject}}</span></br>
             </div>
             <img id="readIcon{{.MailId}}" class="iconBtn" style="width: 20px; margin-right: 10px;" onclick="toggleRead('{{.MailId}}', 'readIcon');" src="/assets/read.svg"/>
             <img id="restoreIcon" class="iconBtn" style="display:{{if .Trash}}block{{else}}none{{end}}; width: 20px; margin-right: 10px;" onclick="restoreMail({{.MailId}}, closeDetails);" src="/assets/restore.svg"/>
