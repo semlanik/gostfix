@@ -106,6 +106,7 @@ func (s *SaslServer) Run() {
 
 func (s *SaslServer) handleRequest(conn net.Conn) {
 	conn.SetReadDeadline(time.Time{})
+	defer conn.Close()
 
 	connectionReader := bufio.NewReader(conn)
 	continueState := ContinueStateNone
@@ -158,7 +159,7 @@ func (s *SaslServer) handleRequest(conn net.Conn) {
 						fmt.Fprintf(conn, "%s\t%s\tuser=%s\n", Ok, ids[1], login)
 					}
 					continueState = ContinueStateNone
-					return
+					continue
 				}
 			}
 
@@ -187,7 +188,6 @@ func (s *SaslServer) handleRequest(conn net.Conn) {
 			}
 		}
 	}
-	conn.Close()
 }
 
 func (s *SaslServer) checkCredentials(credentialsBase64 string) (string, error) {
