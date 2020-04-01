@@ -161,11 +161,33 @@ html, body {
     justify-content: flex-end;
 }
 
+#mailControls {
+    margin-top: 24px;
+    margin-right: 15px;
+    display: flex;
+    flex-direction: row;
+    margin-left: 15px;
+}
+
+#mailNewButton {
+    width: 160px;
+    max-width: 160px;
+    min-width: 160px;
+    flex: 1 1 auto;
+}
+
 #multiActions {
+    display: flex;
+    flex-direction: row;
+    flex: 1 1 auto;
+    margin-left: 18px;
+}
+
+#multiActionsControls {
     display: none;
     flex-direction: row;
-    margin-right: 30px;
 }
+
 
 .verticalPaddingBox {
     display: block;

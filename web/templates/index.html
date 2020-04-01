@@ -16,25 +16,36 @@
         <div id="main">
             <div id="headerBox">
                 <div id="statusLine"></div>
-                <div id="multiActions" class="noselect">
-                    <img class="iconBtn" style="width: 30px; height: 30px; margin: auto auto auto 10px;" onclick="settings(); event.stopPropagation(); return false;" src="/assets/unread.svg"/>
-                    <img class="iconBtn" style="display: none; width: 30px; height: 30px; margin: auto auto auto 10px;" onclick="settings(); event.stopPropagation(); return false;" src="/assets/restore.svg"/>
-                    <img class="iconBtn" style="width: 30px; height: 30px; margin: auto auto auto 10px;" onclick="settings(); event.stopPropagation(); return false;" src="/assets/remove.svg"/>
-                </div>
-                <div id="pager" class="noselect">
-                    <img style="width: 20px;" src="/assets/prev.svg" onclick="prevPage()">
-                    <div style="width: 60px;display: flex;">
-                        <span id="currentPageIndex" style="margin:auto" class="noselect"></span>
-                        <span style="margin:auto" class="noselect">/</span>
-                        <span id="totalPageCount" style="margin:auto" class="noselect"></span>
+            </div>
+            <div id="mailControls">
+                <div id="mailNewButton" class="btn materialLevel1" style="margin-left: 15px; margin-right: 15px;">New email</div>
+                <div id="multiActions" class="materialLevel1 noselect">
+                    <div style="display: block; margin: auto 10px auto 22px;">
+                        <label class="cbox" onclick="event.stopPropagation();">
+                            <input type="checkbox">
+                            <span></span>
+                        </label>
                     </div>
-                    <img style="width: 20px;" src="/assets/next.svg" onclick="nextPage()">
+                    <div id="multiActionsControls">
+                        <img class="iconBtn" style="width: 24px; height: 24px; margin: auto 10px auto 0; flex: 0 1 auto;" onclick="event.stopPropagation(); return false;" src="/assets/unread.svg"/>
+                        <img class="iconBtn" style="display: none; width: 24px; margin: auto 10px auto 0; height: 24px; flex: 0 1 auto;" onclick="event.stopPropagation(); return false;" src="/assets/restore.svg"/>
+                        <img class="iconBtn" style="width: 24px; height: 24px; margin: auto 10px auto 0; flex: 0 1 auto;" onclick="event.stopPropagation(); return false;" src="/assets/remove.svg"/>
+                    </div>
+                    <div class="spacer"></div>
+                    <div id="pager" class="noselect">
+                        <img class="iconBtn" style="width: 20px;" src="/assets/prev.svg" onclick="prevPage()">
+                        <div style="width: 60px;display: flex;">
+                            <span id="currentPageIndex" style="margin:auto" class="noselect"></span>
+                            <span style="margin:auto" class="noselect">/</span>
+                            <span id="totalPageCount" style="margin:auto" class="noselect"></span>
+                        </div>
+                        <img class="iconBtn" style="width: 20px;" src="/assets/next.svg" onclick="nextPage()">
+                    </div>
                 </div>
             </div>
             <div class="horizontalPaddingBox">
                 <div class="contentBox">
                     <div class="leftPanel">
-                        <div id="mailNewButton" class="btn materialLevel1" style="margin-bottom: 15px;">New email</div>
                         <div id="folders"></div>
                     </div>
                     <div class="verticalPaddingBox">

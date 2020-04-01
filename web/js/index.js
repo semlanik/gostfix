@@ -541,9 +541,9 @@ function selectMail(id, checkbox) {
     }
 
     if(selectionList.length > 0) {
-        $('#multiActions').css('display', 'flex');
+        $('#multiActionsControls').css('display', 'flex');
     } else {
-        $('#multiActions').css('display', 'none');
+        $('#multiActionsControls').css('display', 'none');
     }
 }
 

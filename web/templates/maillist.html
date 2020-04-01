@@ -2,7 +2,7 @@
 {{range .}}
 <div id="mail{{.Id}}" class="mailHeaderContainer {{if .Read}}read{{else}}unread{{end}}" style="position: relative;" onmouseover="$('#mailControlPanel{{.Id}}').show()" onmouseout="$('#mailControlPanel{{.Id}}').hide()">
     <div class="mailHeader noselect" onclick="mailOpen('{{.Id}}');">
-        <div style="display: block; margin: 10px 10px;">
+        <div style="display: block; margin: 10px 12px;">
             <label class="cbox" onclick="event.stopPropagation();">
                 <input type="checkbox" onclick="selectMail('{{.Id}}', event.target); event.stopPropagation(); return true;">
                 <span></span>

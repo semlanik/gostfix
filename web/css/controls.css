@@ -549,3 +549,10 @@
     border-color: transparent;
     background-color: currentColor;
 }
+
+
+/* spacer */
+.spacer {
+    display: block;
+    flex: 1 1 auto
+}
