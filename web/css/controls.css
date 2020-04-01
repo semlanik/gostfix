@@ -79,6 +79,7 @@
     background-color: var(--inactive-color);
 }
 
+/* faders */
 .fadeOut {
     background: -moz-linear-gradient(top, rgba(0, 0, 0, 0) 0%, var(--bg-color) 100%); /* FF3.6+ */
     background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(0, 0, 0,0)), color-stop(100%,var(--bg-color))); /* Chrome,Safari4+ */
@@ -259,20 +260,32 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+
+    transition: background-color .2s ease-out;;
 }
 
 .folderBtn:hover {
     cursor: pointer;
     background-color: var(--secondary-color);
+
+    transition: background-color .2s ease-out;;
 }
+
+/* icon button */
 
 .iconBtn:hover, .iconBtn:focus {
     cursor: pointer;
+
+    opacity: 1.0;
+    transition: opacity .2s ease-out;
 }
 
 .iconBtn {
     width: 24px;
     min-width: 24px;
+
+    opacity: 0.75;
+    transition: opacity .2s ease-out;
 
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -393,4 +406,146 @@
 .toast.critical {
     background-color: var(--bad-color);
     color: var(--secondary-text-color);
+}
+
+/* checkbox */
+
+.cbox {
+    z-index: 0;
+    position: relative;
+    display: inline-block;
+    color: rgba(0, 0, 0, 0.87);
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+/* Input */
+.cbox > input {
+    appearance: none;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    z-index: -1;
+    position: absolute;
+    left: -10px;
+    top: -8px;
+    display: block;
+    margin: 0;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    background-color: rgba(0, 0, 0, 0.6);
+    box-shadow: none;
+    outline: none;
+    opacity: 0;
+    transform: scale(1);
+    pointer-events: none;
+    transition: opacity 0.3s, transform 0.2s;
+}
+
+/* Span */
+.cbox > span {
+    display: inline-block;
+    width: 100%;
+    cursor: pointer;
+}
+
+/* Box */
+.cbox > span::before {
+    content: "";
+    display: inline-block;
+    box-sizing: border-box;
+    margin: 3px 11px 3px 1px;
+    border: solid 2px; /* Safari */
+    border-color: rgba( 0, 0, 0, 0.6);
+    border-radius: 2px;
+    width: 18px;
+    height: 18px;
+    vertical-align: top;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+/* Checkmark */
+.cbox > span::after {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 3px;
+    left: 1px;
+    width: 10px;
+    height: 5px;
+    border: solid 2px transparent;
+    border-right: none;
+    border-top: none;
+    transform: translate(3px, 4px) rotate(-45deg);
+}
+
+/* Checked, Indeterminate */
+.cbox > input:checked,
+.cbox > input:indeterminate {
+    background-color: var(--primary-color);
+}
+
+.cbox > input:checked + span::before,
+.cbox > input:indeterminate + span::before {
+    border-color: var(--primary-color);
+    background-color: var(--primary-color);
+}
+
+.cbox > input:checked + span::after,
+.cbox > input:indeterminate + span::after {
+    border-color: var(--bg-color);
+}
+
+.cbox > input:indeterminate + span::after {
+    border-left: none;
+    transform: translate(4px, 3px);
+}
+
+/* Hover, Focus */
+.cbox:hover > input {
+    opacity: 0.04;
+}
+
+.cbox > input:focus {
+    opacity: 0.12;
+}
+
+.cbox:hover > input:focus {
+    opacity: 0.16;
+}
+
+/* Active */
+.cbox > input:active {
+    opacity: 1;
+    transform: scale(0);
+    transition: transform 0s, opacity 0s;
+}
+
+.cbox > input:active + span::before {
+    border-color: var(--primary-color);
+}
+
+.cbox > input:checked:active + span::before {
+    border-color: transparent;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+/* Disabled */
+.cbox > input:disabled {
+    opacity: 0;
+}
+
+.cbox > input:disabled + span {
+    color: rgba(0, 0, 0, 0.38);
+    cursor: initial;
+}
+
+.cbox > input:disabled + span::before {
+    border-color: currentColor;
+}
+
+.cbox > input:checked:disabled + span::before,
+.cbox > input:indeterminate:disabled + span::before {
+    border-color: transparent;
+    background-color: currentColor;
 }

@@ -39,9 +39,9 @@ function validatePassword(name, form) {
     if (element.val() != '') {
         fieldDiv.removeClass('bad')
         if (element.val().length < 8 || !passwordRegex.test(element.val())) {
-            fieldDiv.addClass("weak")
+            fieldDiv.addClass('weak')
         } else {
-            fieldDiv.removeClass("weak")
+            fieldDiv.removeClass('weak')
         }
     } else {
         fieldDiv.removeClass('weak')
@@ -54,9 +54,9 @@ function validateFullName(name, form) {
     var element = $(name)
     var fieldDiv = element.parent()
     if (fullNameRegex.test(element.val())) {
-        fieldDiv.removeClass("bad")
+        fieldDiv.removeClass('bad')
     } else {
-        fieldDiv.addClass("bad")
+        fieldDiv.addClass('bad')
     }
     validateForm(form)
 }
@@ -77,21 +77,21 @@ var emailInputTimer = null
 function validateEmail(name, form) {
     var element = $(name)
     var fieldDiv = element.parent()
-    fieldDiv.addClass("bad")
+    fieldDiv.addClass('bad')
     if (emailRegex.test(element.val())) {
         clearTimeout(emailInputTimer)
         emailInputTimer = setTimeout(function(){
                 $.ajax({
-                url: "/checkEmail",
+                url: '/checkEmail',
                 data: {
                     user: element.val()
                 },
                 success: function(result) {
-                    fieldDiv.removeClass("bad")
+                    fieldDiv.removeClass('bad')
                     validateForm(form)
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
-                    fieldDiv.addClass("bad")
+                    fieldDiv.addClass('bad')
                     validateForm(form)
                 }
             })

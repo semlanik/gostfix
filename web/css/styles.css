@@ -6,12 +6,12 @@
 
 :root {
     --primary-color: #41cd52;
-    --primary-dark-color: #3ab849;
-    --secondary-color: #ebffee;
+    --primary-dark-color: #3ab949;
+    --secondary-color: #e6ffe9;
     --secondary-dark-color: #b8d4bc;
     --inactive-color: #cfcfcf;
     --bg-color: #ffffff;
-    --bg-dark-color: #ebffee;
+    --bg-dark-color: #e6ffe9;
     --primary-text-color: #000000;
     --primary-text-dark-color: #000000;
     --secondary-text-color: #ffffff;

@@ -161,6 +161,12 @@ html, body {
     justify-content: flex-end;
 }
 
+#multiActions {
+    display: none;
+    flex-direction: row;
+    margin-right: 30px;
+}
+
 .verticalPaddingBox {
     display: block;
     flex: 1 1 auto;
