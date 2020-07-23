@@ -25,8 +25,32 @@
 
 package utils
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+)
 
 func StartsWith(s, key string) bool {
 	return strings.Index(s, key) == 0
+}
+
+func RemoveSubString(text *string, begin string, end string) {
+	headIndex := strings.Index(*text, begin)
+	if headIndex >= 0 {
+		headEndIndex := strings.Index(*text, end)
+		runes := []rune(*text)
+		runes = append(runes[0:headIndex], runes[headEndIndex+len(end):]...)
+		*text = string(runes)
+	}
+}
+
+func SanitizeTags(text *string) {
+	re := regexp.MustCompile(`</?html[^<>]*>`)
+	*text = string(re.ReplaceAll([]byte(*text), []byte{}))
+
+	re = regexp.MustCompile(`</?body[^<>]*>`)
+	*text = string(re.ReplaceAll([]byte(*text), []byte{}))
+
+	RemoveSubString(text, "<head", "/head>")
+	RemoveSubString(text, "<style", "/style>")
 }

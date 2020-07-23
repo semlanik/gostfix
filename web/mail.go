@@ -33,6 +33,7 @@ import (
 	"strings"
 
 	"git.semlanik.org/semlanik/gostfix/common"
+	"git.semlanik.org/semlanik/gostfix/utils"
 )
 
 func (s *Server) handleMailRequest(w http.ResponseWriter, r *http.Request) {
@@ -73,6 +74,8 @@ func (s *Server) handleMailDetails(w http.ResponseWriter, user, mailId string) {
 	text := mail.Mail.Body.RichText
 	if text == "" {
 		text = strings.Replace(mail.Mail.Body.PlainText, "\n", "</br>", -1)
+	} else {
+		utils.SanitizeTags(&text)
 	}
 
 	s.storage.SetRead(user, mailId, true)
