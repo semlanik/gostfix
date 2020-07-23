@@ -37,6 +37,8 @@ import (
 const configPath = "data/main.ini"
 
 const (
+	KeyWebPort             = "web_port"
+	KeySASLPort            = "sasl_port"
 	KeyPostfixConfig       = "postfix_config"
 	KeyMongoAddress        = "mongo_address"
 	KeyMongoUser           = "mongo_user"
@@ -71,6 +73,8 @@ func ConfigInstance() *GostfixConfig {
 }
 
 type gostfixConfig struct {
+	WebPort             string
+	SASLPort            string
 	MyDomain            string
 	VMailboxMaps        string
 	VMailboxBase        string
@@ -161,7 +165,19 @@ func newConfig() (config *gostfixConfig, err error) {
 
 	registrationEnabled := cfg.Section("").Key(KeyRegistrationEnabled).String()
 
+	webPort := cfg.Section("").Key(KeyWebPort).String()
+	if webPort == "" {
+		webPort = "65200"
+	}
+
+	saslPort := cfg.Section("").Key(KeySASLPort).String()
+	if saslPort == "" {
+		saslPort = "65201"
+	}
+
 	config = &gostfixConfig{
+		WebPort:             webPort,
+		SASLPort:            saslPort,
 		MyDomain:            myDomain,
 		VMailboxBase:        baseDir,
 		VMailboxMaps:        mapsList[1] + ".db",

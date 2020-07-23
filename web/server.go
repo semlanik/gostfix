@@ -100,7 +100,7 @@ func NewServer(scanner common.Scanner) *Server {
 
 func (s *Server) Run() {
 	http.Handle("/", s)
-	log.Fatal(http.ListenAndServe(":65200", nil))
+	log.Fatal(http.ListenAndServe(":"+config.ConfigInstance().WebPort, nil))
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -1,3 +1,9 @@
+# Port used by web interface server
+web_port = 65200
+
+# Port used by SASL authentication server
+sasl_port = 65201
+
 # Path to postfix service configuration.
 # Usualy placed in /etc/postfix/main.cf
 # If not set cause critical error.

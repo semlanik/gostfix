@@ -41,6 +41,7 @@ import (
 	"time"
 
 	"git.semlanik.org/semlanik/gostfix/auth"
+	"git.semlanik.org/semlanik/gostfix/config"
 	"github.com/google/uuid"
 )
 
@@ -83,7 +84,7 @@ func NewSaslServer() (*SaslServer, error) {
 
 func (s *SaslServer) Run() {
 	go func() {
-		l, err := net.Listen("tcp", "127.0.0.1:65201")
+		l, err := net.Listen("tcp", "127.0.0.1:"+config.ConfigInstance().SASLPort)
 		if err != nil {
 			log.Fatalf("Coulf not start SASL server: %s\n", err)
 			return
