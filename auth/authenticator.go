@@ -217,7 +217,21 @@ func (a *Authenticator) checkToken(user, token string) error {
 	}
 
 	if ok {
-		//TODO: Renew token
+		opts := options.Update().SetArrayFilters(options.ArrayFilters{
+			Registry: bson.DefaultRegistry,
+			Filters: bson.A{
+				bson.M{"element.token": "b3a612c1-a56c-4465-8071-4250ec5de79d"},
+			}})
+		a.tokensCollection.UpdateOne(context.Background(),
+			bson.M{
+				"user": user,
+			},
+			bson.M{
+				"$set": bson.M{
+					"token.$[element].expire": time.Now().Add(time.Hour * 24).Unix(),
+				},
+			},
+			opts)
 		return nil
 	}
 

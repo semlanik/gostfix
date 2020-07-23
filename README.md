@@ -11,6 +11,19 @@ Supported features:
 - ~IMAP interface~
 - SASL authentication
 
+# Prerequesties
+
+gostfix only works on Linux-like operating systems
+
+- go 1.13 or higher
+- mongo 3.6 or higher
+- protobuf 3.6.1 or higher
+- nginx 1.18.0 or higher with websockets support
+
+# Installation and setup
+
+> TODO: Will be described later
+
 # Nginx
 
 ```
