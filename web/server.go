@@ -60,13 +60,14 @@ const (
 )
 
 type Server struct {
-	authenticator *auth.Authenticator
-	fileServer    http.Handler
-	templater     *Templater
-	sessionStore  *sessions.CookieStore
-	storage       *db.Storage
-	Notifier      *webNotifier
-	scanner       common.Scanner
+	authenticator     *auth.Authenticator
+	fileServer        http.Handler
+	attachmentsServer http.Handler
+	templater         *Templater
+	sessionStore      *sessions.CookieStore
+	storage           *db.Storage
+	Notifier          *webNotifier
+	scanner           common.Scanner
 }
 
 func NewServer(scanner common.Scanner) *Server {
@@ -84,13 +85,14 @@ func NewServer(scanner common.Scanner) *Server {
 		return nil
 	}
 	s := &Server{
-		authenticator: authenticator,
-		templater:     NewTemplater("data/templates"),
-		fileServer:    http.FileServer(http.Dir("data")),
-		sessionStore:  sessions.NewCookieStore(make([]byte, 32)),
-		storage:       storage,
-		Notifier:      NewWebNotifier(),
-		scanner:       scanner,
+		authenticator:     authenticator,
+		templater:         NewTemplater("data/templates"),
+		fileServer:        http.FileServer(http.Dir("data")),
+		attachmentsServer: http.StripPrefix("/attachment/", http.FileServer(http.Dir(config.ConfigInstance().AttachmentsPath))),
+		sessionStore:      sessions.NewCookieStore(make([]byte, 32)),
+		storage:           storage,
+		Notifier:          NewWebNotifier(),
+		scanner:           scanner,
 	}
 
 	return s
@@ -107,6 +109,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		utils.StartsWith(r.URL.Path, "/assets/") ||
 		utils.StartsWith(r.URL.Path, "/js/") {
 		s.fileServer.ServeHTTP(w, r)
+	} else if utils.StartsWith(r.URL.Path, "/attachment") {
+		s.attachmentsServer.ServeHTTP(w, r)
 	} else if cap := utils.RegExpUtilsInstance().MailboxFinder.FindStringSubmatch(r.URL.Path); len(cap) == 3 {
 		user, token := s.extractAuth(w, r)
 		if !s.authenticator.Verify(user, token) {

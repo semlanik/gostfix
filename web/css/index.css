@@ -217,3 +217,21 @@ html, body {
     border-radius: var(--default-radius);
     border: 1px solid var(--primary-color);
 }
+
+.attachment {
+    background-color: var(--bg-color);
+    border-radius: 20px;
+    border: 1px solid var(--primary-dark-color);
+    color: var(--primary-text-color);
+    font-weight: bold;
+    margin-right: 10px;
+    padding: var(--tiny-text-padding) var(--base-text-padding) var(--tiny-text-padding) var(--base-text-padding);
+    transition: background-color .2s, color .2s;
+}
+
+
+.attachment:hover, .attachment:focus {
+    background-color: var(--primary-dark-color);
+    color: var(--secondary-text-color);
+    cursor: pointer;
+}

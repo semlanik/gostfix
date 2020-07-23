@@ -80,13 +80,14 @@ func (s *Server) handleMailDetails(w http.ResponseWriter, user, mailId string) {
 
 	s.storage.SetRead(user, mailId, true)
 	fmt.Fprint(w, s.templater.ExecuteDetails(&struct {
-		From    string
-		To      string
-		Subject string
-		Text    template.HTML
-		MailId  string
-		Read    bool
-		Trash   bool
+		From        string
+		To          string
+		Subject     string
+		Text        template.HTML
+		MailId      string
+		Read        bool
+		Trash       bool
+		Attachments []*common.AttachmentHeader
 	}{
 		From:    mail.Mail.Header.From,
 		To:      mail.Mail.Header.To,
@@ -96,6 +97,7 @@ func (s *Server) handleMailDetails(w http.ResponseWriter, user, mailId string) {
 		Read:    false,
 		Trash: mail.Trash ||
 			mail.Folder == common.Trash, //TODO: Legacy for old databases remove soon
+		Attachments: mail.Mail.Body.Attachments,
 	}))
 }
 

@@ -11,6 +11,12 @@
             <img id="deleteIcon" class="iconBtn" style="width: 20px; margin-right: 10px;" onclick="removeMail({{.MailId}}, closeDetails);" src="/assets/remove.svg"/>
             <img class="iconBtn" style="width: 20px; height: 20px; margin-left:10px;" onclick="closeDetails();" src="/assets/back.svg"/>
         </div>
+        <div class="noselect" style="width: 100%; display: flex; flex-direction: row;">
+            <span class="primaryText" style="margin-top: auto; margin-bottom: auto; margin-right: 5px;">Attachments: </span>
+            {{range .Attachments}}
+                <div class="attachment" onclick="downloadAttachment({{.Id}}, {{.FileName}})">{{.FileName}}</div>
+            {{end}}
+        </div>
     </div>
     <div id="mailBody" class="contentArea horizontalPaddingBox">
         <div style="position: relative; max-width: 100%; max-height: 100%; width: 100%; height: 100%;">

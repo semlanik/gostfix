@@ -374,6 +374,29 @@ function restoreMail(mailId, callback) {
     })
 }
 
+function downloadAttachment(attachmentId, filename) {
+    $.ajax({
+        url: '/attachment/' + attachmentId,
+        xhrFields: {
+            responseType: 'blob'
+        },
+        success: function (data) {
+            // Ah-ha-ha-ha html and web is piece of shit full of hacks...
+            var a = document.createElement('a');
+            var url = window.URL.createObjectURL(data);
+            a.href = url;
+            a.download = filename;
+            document.body.append(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            showToast(Severity.Critical, 'Unable to download attachment: ' + errorThrown + ' ' + textStatus)
+        }
+    });
+}
+
 function setDetailsVisible(visible) {
     if (visible) {
         $('#mailDetails').show()
