@@ -32,6 +32,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -220,6 +221,16 @@ func (s *Storage) addEmail(user string, email string, upsert bool) error {
 }
 
 func (s *Storage) RemoveEmail(user string, email string) error {
+	log.Printf("User %s removes email %s", user, email)
+
+	result := s.emailsCollection.FindOne(context.Background(), bson.M{
+		"user":  user,
+		"email": email,
+	})
+
+	if result.Err() != nil {
+		return result.Err()
+	}
 
 	db, err := berkeleydb.NewDB()
 	if err != nil {
@@ -236,6 +247,14 @@ func (s *Storage) RemoveEmail(user string, email string) error {
 	if err != nil {
 		return errors.New("Unable to remove email from maps" + err.Error())
 	}
+
+	err = s.cleanupAttachments(user, email)
+	if err != nil {
+		log.Printf("Unable to cleanup attachments for %s %s\n", email, err)
+	}
+
+	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
+	mailsCollection.DeleteMany(context.Background(), bson.M{"email": email})
 
 	_, err = s.emailsCollection.UpdateOne(context.Background(),
 		bson.M{"user": user},
@@ -307,6 +326,16 @@ func (s *Storage) DeleteMail(user string, mailId string) error {
 	oId, err := primitive.ObjectIDFromHex(mailId)
 	if err != nil {
 		return err
+	}
+
+	var result common.MailMetadata
+	err = mailsCollection.FindOne(context.Background(), bson.M{"_id": oId}).Decode(&result)
+	if err != nil {
+		return err
+	}
+
+	for _, attachment := range result.Mail.Body.Attachments {
+		removeAttachment(attachment.Id)
 	}
 
 	_, err = mailsCollection.DeleteOne(context.Background(), bson.M{"_id": oId})
@@ -445,10 +474,6 @@ func (s *Storage) SetRead(user string, id string, read bool) error {
 	return err
 }
 
-func (s *Storage) GetAttachment(user string, attachmentId string) (filePath string, err error) {
-	return "", nil
-}
-
 func (s *Storage) GetUsers() (users []string, err error) {
 	return nil, nil
 }
@@ -548,4 +573,40 @@ func (s *Storage) ReadEmailMaps() (map[string]string, error) {
 	}
 
 	return emailMaps, nil
+}
+
+func removeAttachment(attachmentId string) error {
+	attachmentPath := config.ConfigInstance().AttachmentsPath + "/" + attachmentId
+	err := os.Remove(attachmentPath)
+	if err != nil {
+		log.Printf("Unable to remove attachment file: %s. Database inconsistency", attachmentPath)
+	}
+
+	return err
+}
+
+func (s *Storage) cleanupAttachments(user, email string) error {
+	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
+
+	cur, err := mailsCollection.Aggregate(context.Background(), bson.A{
+		bson.M{"$match": bson.M{"email": email}},
+		bson.M{"$project": bson.M{"mail.body.attachments": 1}},
+		bson.M{"$unwind": "$mail.body.attachments"},
+		bson.M{"$replaceRoot": bson.M{"newRoot": "$mail.body.attachments"}},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	for cur.Next(context.Background()) {
+		var attachment common.AttachmentHeader
+		err = cur.Decode(&attachment)
+		if err != nil {
+			log.Printf("Unable to decode attachment")
+		}
+		removeAttachment(attachment.Id)
+	}
+
+	return nil
 }
