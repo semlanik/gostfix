@@ -22,7 +22,7 @@
                 <div id="multiActions" class="materialLevel1 noselect">
                     <div style="display: block; margin: auto 10px auto 22px;">
                         <label class="cbox" onclick="event.stopPropagation();">
-                            <input type="checkbox">
+                            <input id="selectAllCheckbox" type="checkbox" onclick="toogleMailSelection(); event.stopPropagation(); return true;">
                             <span></span>
                         </label>
                     </div>

@@ -4,7 +4,7 @@
     <div class="mailHeader noselect">
         <div style="display: block; margin: 10px 12px;">
             <label class="cbox" onclick="event.stopPropagation();">
-                <input type="checkbox" onclick="selectMail('{{.Id}}', event.target); event.stopPropagation(); return true;">
+                <input type="checkbox" id="mailCheckbox{{.Id}}" onclick="selectMail('{{.Id}}'); event.stopPropagation(); return true;">
                 <span></span>
             </label>
         </div>

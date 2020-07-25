@@ -148,6 +148,7 @@ function mailOpen(id) {
 }
 
 function openFolder(folder) {
+    resetSelectionList()
     window.location.hash = folder
 }
 
@@ -453,10 +454,10 @@ function updateMailList(folder, page) {
             currentFolder = folder
             currentPage = page
 
-            if($('#currentPageIndex')) {
+            if ($('#currentPageIndex')) {
                 $('#currentPageIndex').text(currentPage + 1)
             }
-            if($('#totalPageCount')) {
+            if ($('#totalPageCount')) {
                 $('#totalPageCount').text(pageMax + 1)
             }
         },
@@ -469,22 +470,22 @@ function updateMailList(folder, page) {
 }
 
 function nextPage() {
-    var newPage = currentPage < (pageMax - 1) ? currentPage + 1 : pageMax
-    window.location.hash = currentFolder + newPage
+    var newPage = currentPage < (pageMax - 1) ? currentPage + 1 : pageMax;
+    window.location.hash = currentFolder + newPage;
 }
 
 function prevPage() {
-    var newPage = currentPage > 0 ? currentPage - 1 : 0
-    window.location.hash = currentFolder + newPage
+    var newPage = currentPage > 0 ? currentPage - 1 : 0;
+    window.location.hash = currentFolder + newPage;
 }
 
 function toggleDropDown(dd) {
-    $('#'+dd).toggle()
+    $('#'+dd).toggle();
 }
 
 function sendNewMail(force) {
     if (toEmailList.length <= 0) {
-        return
+        return;
     }
 
     if (!force) {
@@ -492,9 +493,9 @@ function sendNewMail(force) {
         // return
     }
 
-    var composedEmailString = toEmailList[0]
-    for(var i = 1; i < toEmailList.length; i++) {
-        composedEmailString += "," + toEmailList[i]
+    var composedEmailString = toEmailList[0];
+    for (var i = 1; i < toEmailList.length; i++) {
+        composedEmailString += "," + toEmailList[i];
     }
     $('#newMailTo').val(composedEmailString)
     var formValue = $('#mailNewForm').serialize()
@@ -511,39 +512,39 @@ function sendNewMail(force) {
         error: function(jqXHR, textStatus, errorThrown) {
             showToast(Severity.Critical, 'Unable to send email: ' + errorThrown + ' ' + textStatus)
         }
-    })
+    });
 }
 
 function logout() {
-    window.location.href = '/logout'
+    window.location.href = '/logout';
 }
 
 function settings() {
-    window.location.href = '/settings'
+    window.location.href = '/settings';
 }
 
 function connectNotifier() {
     if (notifierSocket != null) {
-        return
+        return;
     }
 
-    var protocol = 'wss://'
+    var protocol = 'wss://';
     if (window.location.protocol  !== 'https:') {
-        protocol = 'ws://'
+        protocol = 'ws://';
     }
-    notifierSocket = new WebSocket(protocol + window.location.host + mailbox + '/notifierSubscribe')
+    notifierSocket = new WebSocket(protocol + window.location.host + mailbox + '/notifierSubscribe');
     notifierSocket.onmessage = function (e) {
         for (var i = 0; i < folders.length; i++) {
-            folderStat(folders[i])
+            folderStat(folders[i]);
         }
-        updateMailList(currentFolder, currentPage)
+        updateMailList(currentFolder, currentPage);
     }
 }
 
 $(window).on('beforeunload', function(){
     if (notifierSocket != null) {
         notifierSocket.close();
-        notifierSocket = null
+        notifierSocket = null;
     }
 });
 
@@ -552,22 +553,50 @@ window.onbeforeunload = function() {
 
 
 var selectionList = new Array()
-function selectMail(id, checkbox) {
-    var currentState = $(checkbox).prop('checked')
+function selectMail(id) {
+    var currentState = $("#mailCheckbox"+id).prop('checked')
     if (currentState == false) {
         const i = selectionList.indexOf(id);
         if (i >= 0) {
             selectionList.splice(i, 1);
         }
     } else {
-        selectionList.push(id)
+        selectionList.push(id);
     }
 
-    if(selectionList.length > 0) {
+    if (selectionList.length > 0) {
+        $("#selectAllCheckbox").prop('checked', true);
         $('#multiActionsControls').css('display', 'flex');
     } else {
+        $("#selectAllCheckbox").prop('checked', false);
         $('#multiActionsControls').css('display', 'none');
     }
+}
+
+function toogleMailSelection() {
+    var currentState = $("#selectAllCheckbox").prop('checked');
+    currentState = !currentState;
+
+    if (currentState) {
+        resetSelectionList()
+    } else {
+        selectionList = new Array();
+        $('[id^="mailCheckbox"]').prop('checked', true);
+        $('[id^="mailCheckbox"]').each(function() {
+            selectionList.push(this.id.replace("mailCheckbox", ""))
+        })
+        $('#multiActionsControls').css('display', 'flex');
+    }
+}
+
+function resetSelectionList() {
+    for (var i = 0; i < selectionList.length; ++i) {
+        $("#mailCheckbox"+selectionList[i]).prop('checked', false);
+    }
+
+    selectionList = new Array();
+    $("#selectAllCheckbox").prop('checked', false);
+    $('#multiActionsControls').css('display', 'none');
 }
 
 function removeSelected(callback) {
