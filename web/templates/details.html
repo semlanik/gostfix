@@ -12,7 +12,7 @@
             <img class="iconBtn" style="width: 20px; height: 20px; margin-left:10px;" onclick="closeDetails();" src="/assets/back.svg"/>
         </div>
         <div class="noselect" style="width: 100%; display: flex; flex-direction: row;">
-            <span class="primaryText" style="margin-top: auto; margin-bottom: auto; margin-right: 5px;">Attachments: </span>
+            <img id="attachementIcon" style="width: 20px; height: 20px; margin-top: auto; margin-bottom: auto; margin-right: 5px;" src="/assets/attachments.svg"/>
             {{range .Attachments}}
                 <div class="attachment" onclick="downloadAttachment({{.Id}}, {{.FileName}})">{{.FileName}}</div>
             {{end}}

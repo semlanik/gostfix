@@ -1,7 +1,7 @@
 <!-- <div class="fadeIn" style="position: absolute; top: 5pt; left: 0; right: 0; height: 10pt"></div> -->
 {{range .}}
-<div id="mail{{.Id}}" class="mailHeaderContainer {{if .Read}}read{{else}}unread{{end}}" style="position: relative;" onmouseover="$('#mailControlPanel{{.Id}}').show()" onmouseout="$('#mailControlPanel{{.Id}}').hide()">
-    <div class="mailHeader noselect" onclick="mailOpen('{{.Id}}');">
+<div id="mail{{.Id}}" class="mailHeaderContainer {{if .Read}}read{{else}}unread{{end}}" style="position: relative;" onmouseover="$('#mailControlPanel{{.Id}}').show()" onmouseout="$('#mailControlPanel{{.Id}}').hide()" onclick="mailOpen('{{.Id}}');">
+    <div class="mailHeader noselect">
         <div style="display: block; margin: 10px 12px;">
             <label class="cbox" onclick="event.stopPropagation();">
                 <input type="checkbox" onclick="selectMail('{{.Id}}', event.target); event.stopPropagation(); return true;">
@@ -13,7 +13,7 @@
         <div id="mailDate{{.Id}}" class="mailDate elidedText noselect"><script>localDate('mailDate{{.Id}}', {{.Mail.Header.Date}})</script></div>
     </div>
     {{if len .Mail.Body.Attachments}}
-    <div class="noselect" style="width: 100%; display: flex; flex-direction: row; margin-bottom: 10px;">
+    <div class="noselect" style="display: flex; flex-direction: row; margin-bottom: 10px;">
         <img id="attachementIcon" style="width: 20px; margin-left: 60px; margin-right: 10px;" src="/assets/attachments.svg"/>
         {{range .Mail.Body.Attachments}}
         <div class="listAttachment" onclick="downloadAttachment({{.Id}}, {{.FileName}}); event.stopPropagation(); return false;">{{.FileName}}</div>
