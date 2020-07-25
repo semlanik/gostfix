@@ -137,7 +137,7 @@ html, body {
     padding: var(--base-text-padding);
     font-size: var(--small-text-size);
     text-align: center;
-    color: var(--secondary-text-dark-color)
+    color: var(--secondary-text-dark-color);
 }
 
 .mailControlPanel {
@@ -229,9 +229,24 @@ html, body {
     transition: background-color .2s, color .2s;
 }
 
-
 .attachment:hover, .attachment:focus {
     background-color: var(--primary-dark-color);
     color: var(--secondary-text-color);
+    cursor: pointer;
+}
+
+.listAttachment {
+    background-color: var(--bg-color);
+    border-radius: 20px;
+    border: 1px solid var(--inactive-color);
+    color: var(--secondary-text-dark-color);
+    font-weight: bold;
+    margin-right: 10px;
+    padding: var(--tiny-text-padding) var(--base-text-padding) var(--tiny-text-padding) var(--base-text-padding);
+    transition: color .2s;
+}
+
+.listAttachment:hover, .attachment:focus {
+    color: var(--primary-text-color);
     cursor: pointer;
 }

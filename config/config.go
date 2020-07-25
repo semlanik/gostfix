@@ -167,11 +167,13 @@ func newConfig() (config *gostfixConfig, err error) {
 
 	webPort := cfg.Section("").Key(KeyWebPort).String()
 	if webPort == "" {
+		log.Printf("Web server port is not specified in configuration file, use default 65200")
 		webPort = "65200"
 	}
 
 	saslPort := cfg.Section("").Key(KeySASLPort).String()
 	if saslPort == "" {
+		log.Printf("SASL server port is not specified in configuration file, use default 65201")
 		saslPort = "65201"
 	}
 
