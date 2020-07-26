@@ -23,33 +23,33 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-var currentFolder = ''
-var currentPage = 0
-var currentMail = ''
-var mailbox = ''
-var pageMax = 10
-const mailboxRegex = /^(\/m\d+)/g
-const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-const emailEndRegex = /[;,\s]/g
+var currentFolder = '';
+var currentPage = 0;
+var currentMail = '';
+var mailbox = '';
+var pageMax = 10;
+const mailboxRegex = /^(\/m\d+)/g;
+const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+const emailEndRegex = /[;,\s]/g;
 
-var folders = new Array()
-var notifierSocket = null
+var folders = new Array();
+var notifierSocket = null;
 
-var toEmailList = new Array()
-var toEmailIndex = 0
-var toEmailPreviousSelectionPosition = 0
+var toEmailList = new Array();
+var toEmailIndex = 0;
+var toEmailPreviousSelectionPosition = 0;
 
 $(window).click(function(e){
-    var target = $(e.target)
-    var isDropDown = false
+    var target = $(e.target);
+    var isDropDown = false;
     for (var i = 0; i < target.parents().length; i++) {
-        isDropDown = target.parents()[i].classList.contains('dropbtn')
+        isDropDown = target.parents()[i].classList.contains('dropbtn');
         if (isDropDown) {
-            break
+            break;
         }
     }
     if (!e.target.matches('.dropbtn') && !isDropDown) {
-        $('.dropdown-content').hide()
+        $('.dropdown-content').hide();
     }
 })
 
@@ -57,136 +57,138 @@ $(document).ready(function(){
     $.ajaxSetup({
         global: false,
         type: 'POST'
-    })
+    });
 
-    urlPaths = mailboxRegex.exec($(location).attr('pathname'))
+    urlPaths = mailboxRegex.exec($(location).attr('pathname'));
     if (urlPaths != null && urlPaths.length === 2) {
-        mailbox = urlPaths[0]
+        mailbox = urlPaths[0];
     } else {
-        mailbox = ''
+        mailbox = '';
     }
 
-    $(window).bind('hashchange', onHashChanged)
-    onHashChanged()
-    loadFolders()
-    loadStatusLine()
+    $(window).bind('hashchange', onHashChanged);
+    onHashChanged();
+    loadFolders();
+    loadStatusLine();
 
-    $('#mailNewButton').click(mailNew)
-    connectNotifier()
+    $('#mailNewButton').click(mailNew);
+    connectNotifier();
 
-    $('#toEmailField').on('input', toEmailFieldChanged)
+    $('#toEmailField').on('input', toEmailFieldChanged);
     $('#toEmailField').keydown(function(e){
-        var actualText = $('#toEmailField').val()
-        const selectionPosition = e.target.selectionStart
+        var actualText = $('#toEmailField').val();
+        const selectionPosition = e.target.selectionStart;
         switch(e.keyCode) {
             case 8:
                 if (toEmailPreviousSelectionPosition == 0 && e.target.selectionStart == 0
                     && toEmailList.length > 0 && $('#toEmailList').children().length > 1) {
-                        removeToEmail($('#toEmailList').children()[$('#toEmailList').children().length - 2].id, toEmailList[toEmailList.length - 1])
+                        removeToEmail($('#toEmailList').children()[$('#toEmailList').children().length - 2].id, toEmailList[toEmailList.length - 1]);
                     }
-            break
+            break;
             case 13:
             case 9:
-                addToEmail(actualText.slice(0, selectionPosition))
-                $('#toEmailField').val(actualText.slice(selectionPosition + 1, actualText.length))
-                break
+                addToEmail(actualText.slice(0, selectionPosition));
+                $('#toEmailField').val(actualText.slice(selectionPosition + 1, actualText.length));
+                break;
         }
-        toEmailPreviousSelectionPosition = e.target.selectionStart
+        toEmailPreviousSelectionPosition = e.target.selectionStart;
     })
+
+    resetSelectionList();
 })
 
 function toEmailFieldChanged(e) {
-    const selectionPosition = e.target.selectionStart - 1
-    var actualText = $('#toEmailField').val()
+    const selectionPosition = e.target.selectionStart - 1;
+    var actualText = $('#toEmailField').val();
 
     if (actualText.length <= 0 || selectionPosition < 0) {
-        return
+        return;
     }
 
-    var lastChar = actualText[selectionPosition]
+    var lastChar = actualText[selectionPosition];
     if (emailEndRegex.test(lastChar)) {
-        addToEmail(actualText.slice(0, selectionPosition))
-        $('#toEmailField').val(actualText.slice(selectionPosition + 1, actualText.length))
+        addToEmail(actualText.slice(0, selectionPosition));
+        $('#toEmailField').val(actualText.slice(selectionPosition + 1, actualText.length));
     }
 }
 
 function addToEmail(toEmail) {
     if (toEmail.length <= 0) {
-        return
+        return;
     }
-    var style = emailRegex.test(toEmail) ? 'valid' : 'invalid'
-    $('<div class="'+ style + ' toEmail" id="toEmail' + toEmailIndex + '">' + toEmail + '<img class="iconBtn" style="height: 12px; margin-left:10px; margin: auto;" onclick="removeToEmail(\'toEmail' + toEmailIndex + '\', \'' + toEmail + '\');" src="/assets/cross.svg"/></div>').insertBefore('#toEmailField')
-    toEmailIndex++
-    toEmailList.push(toEmail)
-    checkSendDisabled()
+    var style = emailRegex.test(toEmail) ? 'valid' : 'invalid';
+    $('<div class="'+ style + ' toEmail" id="toEmail' + toEmailIndex + '">' + toEmail + '<img class="iconBtn" style="height: 12px; margin-left:10px; margin: auto;" onclick="removeToEmail(\'toEmail' + toEmailIndex + '\', \'' + toEmail + '\');" src="/assets/cross.svg"/></div>').insertBefore('#toEmailField');
+    toEmailIndex++;
+    toEmailList.push(toEmail);
+    checkSendDisabled();
 }
 
 function removeToEmail(id, email) {
-    const index = toEmailList.indexOf(email)
+    const index = toEmailList.indexOf(email);
     if (index >= 0) {
-        toEmailList.splice(index, 1)
-        checkSendDisabled()
+        toEmailList.splice(index, 1);
+        checkSendDisabled();
     }
 
-    $('#' + id).remove()
+    $('#' + id).remove();
 }
 
 function checkSendDisabled() {
     if (toEmailList.length > 0) {
-        $('#sendButton').removeClass('disabled')
+        $('#sendButton').removeClass('disabled');
     } else {
-        $('#sendButton').addClass('disabled')
+        $('#sendButton').addClass('disabled');
     }
 }
 
 function mailNew(e) {
-    window.location.hash = currentFolder + currentPage + '/mailNew'
+    window.location.hash = currentFolder + currentPage + '/mailNew';
 }
 
 function mailOpen(id) {
-    window.location.hash = currentFolder + currentPage + '/' + id
+    window.location.hash = currentFolder + currentPage + '/' + id;
 }
 
 function openFolder(folder) {
-    resetSelectionList()
-    window.location.hash = folder
+    resetSelectionList();
+    window.location.hash = folder;
 }
 
 function onHashChanged() {
-    var hashLocation = window.location.hash
-    if (hashLocation == "") {
-        setDetailsVisible(false)
-        openFolder('Inbox')
-        return
+    var hashLocation = window.location.hash;
+    if (hashLocation == '') {
+        setDetailsVisible(false);
+        openFolder('Inbox');
+        return;
     }
 
-    hashRegex = /^#([a-zA-Z]+)(\d*)\/?([A-Fa-f\d]*)/g
-    hashParts = hashRegex.exec(hashLocation)
-    page = 0
-    if (hashParts.length >= 3 && hashParts[2] != "") {
-        page = parseInt(hashParts[2])
+    hashRegex = /^#([a-zA-Z]+)(\d*)\/?([A-Fa-f\d]*)/g;
+    hashParts = hashRegex.exec(hashLocation);
+    page = 0;
+    if (hashParts.length >= 3 && hashParts[2] != '') {
+        page = parseInt(hashParts[2]);
         if (typeof page != 'number' || page > pageMax || page < 0) {
-            page = 0
+            page = 0;
         }
     }
 
-    if (hashParts.length >= 2 && (hashParts[1] != currentFolder || currentPage != page) && hashParts[1] != "") {
-        updateMailList(hashParts[1], page)
+    if (hashParts.length >= 2 && (hashParts[1] != currentFolder || currentPage != page) && hashParts[1] != '') {
+        updateMailList(hashParts[1], page);
     }
 
     if (hashParts.length >= 4 && hashParts[3] != "" && hashParts[3] != '/mailNew') {
         if (currentMail != hashParts[3]) {
-            requestMail(hashParts[3])
+            requestMail(hashParts[3]);
         }
     } else {
-        setDetailsVisible(false)
+        setDetailsVisible(false);
     }
 
-    hashParts = hashLocation.split('/')
+    hashParts = hashLocation.split('/');
     if (hashParts.length == 2 && hashParts[1] == 'mailNew') {
-        setMailNewVisible(true)
+        setMailNewVisible(true);
     } else {
-        setMailNewVisible(false)
+        setMailNewVisible(false);
     }
 }
 
@@ -198,45 +200,46 @@ function requestMail(mailId) {
                 mailId: mailId
             },
             success: function(result) {
-                currentMail = mailId
+                currentMail = mailId;
                 if ($('#readListIcon'+mailId)) {
-                    $('#readListIcon'+mailId).attr('src', '/assets/read.svg')
+                    $('#readListIcon'+mailId).attr('src', '/assets/read.svg');
                 }
-                $('#mail'+mailId).removeClass('unread')
-                $('#mail'+mailId).addClass('read')
+                $('#mail'+mailId).removeClass('unread');
+                $('#mail'+mailId).addClass('read');
                 $('#mailDetails').html(result);
                 setDetailsVisible(true);
                 folderStat(currentFolder);//TODO: receive statistic from websocket
+                checkMailUnread();
             },
             error: function(jqXHR, textStatus, errorThrown) {
-                $('#mailDetails').html(textStatus)
-                setDetailsVisible(true)
-                showToast(Severity.Critical, 'Unable to open mail: ' + errorThrown + ' ' + textStatus)
+                $('#mailDetails').html(textStatus);
+                setDetailsVisible(true);
+                showToast(Severity.Critical, 'Unable to open mail: ' + errorThrown + ' ' + textStatus);
             }
-        })
+        });
     }
 }
 
 function loadFolders() {
     if (mailbox == '') {
-        $('#folders').html('Unable to load folder list')
-        return
+        $('#folders').html('Unable to load folder list');
+        return;
     }
 
     $.ajax({
         url: mailbox + '/folders',
         success: function(result) {
-            folderList = jQuery.parseJSON(result)
+            folderList = jQuery.parseJSON(result);
             for(var i = 0; i < folderList.folders.length; i++) {
-                folders.push(folderList.folders[i].name)
-                folderStat(folderList.folders[i].name)
+                folders.push(folderList.folders[i].name);
+                folderStat(folderList.folders[i].name);
             }
-            $('#folders').html(folderList.html)
+            $('#folders').html(folderList.html);
         },
         error: function(jqXHR, textStatus, errorThrown) {
-            showToast(Severity.Critical, 'Unable to update folder list: ' + errorThrown + ' ' + textStatus)
+            showToast(Severity.Critical, 'Unable to update folder list: ' + errorThrown + ' ' + textStatus);
         }
-    })
+    });
 }
 
 function folderStat(folder) {
@@ -246,58 +249,58 @@ function folderStat(folder) {
             folder: folder
         },
         success: function(result) {
-            var stats = jQuery.parseJSON(result)
+            var stats = jQuery.parseJSON(result);
             if (stats.unread > 0) {
-                $('#folderStats'+folder).text(stats.unread)
-                $('#folder'+folder).addClass('unread')
+                $('#folderStats'+folder).text(stats.unread);
+                $('#folder'+folder).addClass('unread');
             } else {
-                $('#folder'+folder).removeClass('unread')
-                $('#folderStats'+folder).text("")
+                $('#folder'+folder).removeClass('unread');
+                $('#folderStats'+folder).text("");
             }
         },
         error: function(jqXHR, textStatus, errorThrown) {
-            showToast(Severity.Critical, 'Unable to update folder list: ' + errorThrown + ' ' + textStatus)
+            showToast(Severity.Critical, 'Unable to update folder list: ' + errorThrown + ' ' + textStatus);
         }
-    })
+    });
 }
 
 function closeDetails() {
-    window.location.hash = currentFolder + currentPage
+    window.location.hash = currentFolder + currentPage;
 }
 
 function closeMailNew() {
-    window.location.hash = currentFolder + currentPage
+    window.location.hash = currentFolder + currentPage;
 }
 
 function loadStatusLine() {
     $.ajax({
         url: mailbox + '/statusLine',
         success: function(result) {
-            $('#statusLine').html(result)
+            $('#statusLine').html(result);
         },
         error: function(jqXHR, textStatus, errorThrown) {
-            showToast(Severity.Critical, 'Unable to load status line: ' + errorThrown + ' ' + textStatus)
+            showToast(Severity.Critical, 'Unable to load status line: ' + errorThrown + ' ' + textStatus);
         }
-    })
+    });
 }
 
 function localDate(elementToChange, timestamp) {
-    var today = new Date()
-    var date = new Date(timestamp*1000)
+    var today = new Date();
+    var date = new Date(timestamp * 1000);
 
-    dateString = ""
+    dateString = '';
     if (today.getDay() == date.getDay()
         && today.getMonth() == date.getMonth()
         && today.getFullYear() == date.getFullYear()) {
-            dateString = date.toLocaleTimeString("en-US")
+            dateString = date.toLocaleTimeString('en-US');
     } else if (today.getFullYear() == date.getFullYear()) {
-        const options = { day: 'numeric', month: 'short' }
-        dateString = date.toLocaleDateString("en-US", options)
+        const options = { day: 'numeric', month: 'short' };
+        dateString = date.toLocaleDateString('en-US', options);
     } else {
-        dateString = date.toLocaleDateString("en-US")
+        dateString = date.toLocaleDateString('en-US');
     }
 
-    $('#'+elementToChange).text(dateString)
+    $('#'+elementToChange).text(dateString);
 }
 
 function setRead(mailId, read) {
@@ -308,58 +311,60 @@ function setRead(mailId, read) {
         success: function(result) {
             if (read) {
                 if ($('#readIcon'+mailId)) {
-                    $('#readIcon'+mailId).attr('src', '/assets/read.svg')
+                    $('#readIcon'+mailId).attr('src', '/assets/read.svg');
                 }
                 if ($('#readListIcon'+mailId)) {
-                    $('#readListIcon'+mailId).attr('src', '/assets/read.svg')
+                    $('#readListIcon'+mailId).attr('src', '/assets/read.svg');
                 }
-                $('#mail'+mailId).removeClass('unread')
-                $('#mail'+mailId).addClass('read')
+                $('#mail'+mailId).removeClass('unread');
+                $('#mail'+mailId).addClass('read');
             } else {
                 if ($('#readIcon'+mailId)) {
-                    $('#readIcon'+mailId).attr('src', '/assets/unread.svg')
+                    $('#readIcon'+mailId).attr('src', '/assets/unread.svg');
                 }
                 if ($('#readListIcon'+mailId)) {
-                    $('#readListIcon'+mailId).attr('src', '/assets/unread.svg')
+                    $('#readListIcon'+mailId).attr('src', '/assets/unread.svg');
                 }
-                $('#mail'+mailId).removeClass('read')
-                $('#mail'+mailId).addClass('unread')
+                $('#mail'+mailId).removeClass('read');
+                $('#mail'+mailId).addClass('unread');
             }
             folderStat(currentFolder);//TODO: receive statistic from websocket
+            checkMailUnread();
         },
         error: function(jqXHR, textStatus, errorThrown) {
         }
-    })
+    });
 }
 
-function toggleRead(mailId, iconId) {
-    setRead(mailId, $('#' + iconId + mailId).attr('src') == '/assets/unread.svg')
+function toggleRead(mailId) {
+    var read = $('#mail'+mailId).hasClass('read');
+    setRead(mailId, !read);
 }
 
 function removeMail(mailId, callback) {
-    var url = currentFolder != 'Trash' ? '/remove' : '/delete'
+    var url = currentFolder != 'Trash' ? '/remove' : '/delete';
     $.ajax({
         url: url,
         data: {mailId: mailId},
-        success: function(result) {
+        success: function() {
+            removeFromSelectionList(mailId);
             $('#mail'+mailId).remove();
             if (callback) {
-                callback();
+                callback(mailId);
             }
             folderStat(currentFolder);//TODO: receive statistic from websocket
             folderStat('Trash');//TODO: receive statistic from websocket
         },
         error: function(jqXHR, textStatus, errorThrown) {
         }
-    })
+    });
 }
 
 function restoreMail(mailId, callback) {
-    var url = '/restore'
     $.ajax({
-        url: url,
+        url: '/restore',
         data: {mailId: mailId},
-        success: function(result) {
+        success: function() {
             if (currentFolder == 'Trash') {
                 $('#mail'+mailId).remove();
             }
@@ -367,12 +372,12 @@ function restoreMail(mailId, callback) {
                 callback();
             }
             for (var i = 0; i < folders.length; i++) {
-                folderStat(folders[i])
+                folderStat(folders[i]);
             }
         },
         error: function(jqXHR, textStatus, errorThrown) {
         }
-    })
+    });
 }
 
 function downloadAttachment(attachmentId, filename) {
@@ -393,49 +398,49 @@ function downloadAttachment(attachmentId, filename) {
             window.URL.revokeObjectURL(url);
         },
         error: function(jqXHR, textStatus, errorThrown) {
-            showToast(Severity.Critical, 'Unable to download attachment: ' + errorThrown + ' ' + textStatus)
+            showToast(Severity.Critical, 'Unable to download attachment: ' + errorThrown + ' ' + textStatus);
         }
     });
 }
 
 function setDetailsVisible(visible) {
     if (visible) {
-        $('#mailDetails').show()
-        $('#mailList').css({pointerEvents: 'none'})
+        $('#mailDetails').show();
+        $('#mailList').css({pointerEvents: 'none'});
     } else {
-        currentMail = ''
-        $('#mailDetails').hide()
-        $('#mailDetails').html('')
-        $('#mailList').css({pointerEvents: 'auto'})
+        currentMail = '';
+        $('#mailDetails').hide();
+        $('#mailDetails').html('');
+        $('#mailList').css({pointerEvents: 'auto'});
     }
 }
 
 function setMailNewVisible(visible) {
     if (visible) {
-        $('#mailNew').show()
-        $('#mailList').css({pointerEvents: 'none'})
+        $('#mailNew').show();
+        $('#mailList').css({pointerEvents: 'none'});
     } else {
-        currentMail = ''
-        $('#mailNew').hide()
-        $('#mailList').css({pointerEvents: 'auto'})
+        currentMail = '';
+        $('#mailNew').hide();
+        $('#mailList').css({pointerEvents: 'auto'});
     }
 
     while (toEmailList.length > 0 && $('#toEmailList').children().length > 1) {
-        removeToEmail($('#toEmailList').children()[$('#toEmailList').children().length - 2].id, toEmailList[toEmailList.length - 1])
+        removeToEmail($('#toEmailList').children()[$('#toEmailList').children().length - 2].id, toEmailList[toEmailList.length - 1]);
     }
-    toEmailList = new Array()
-    $('#newMailEditor').val('')
-    $('#newMailSubject').val('')
-    $('#newMailTo').val('')
-    $('#toEmailField').val('')
+    toEmailList = new Array();
+    $('#newMailEditor').val('');
+    $('#newMailSubject').val('');
+    $('#newMailTo').val('');
+    $('#toEmailField').val('');
 }
 
 function updateMailList(folder, page) {
     if (mailbox == '' || folder == '') {
         if ($('#mailList')) {
-            $('#mailList').html('Unable to load message list')
+            $('#mailList').html('Unable to load message list');
         }
-        return
+        return;
     }
 
     $.ajax({
@@ -445,28 +450,28 @@ function updateMailList(folder, page) {
             page: page
         },
         success: function(result) {
-            var data = jQuery.parseJSON(result)
-            pageMax = Math.floor(data.total/50)
+            var data = jQuery.parseJSON(result);
+            pageMax = Math.floor(data.total/50);
 
             if ($('#mailList')) {
-                $('#mailList').html(data.html)
+                $('#mailList').html(data.html);
             }
-            currentFolder = folder
-            currentPage = page
+            currentFolder = folder;
+            currentPage = page;
 
             if ($('#currentPageIndex')) {
-                $('#currentPageIndex').text(currentPage + 1)
+                $('#currentPageIndex').text(currentPage + 1);
             }
             if ($('#totalPageCount')) {
-                $('#totalPageCount').text(pageMax + 1)
+                $('#totalPageCount').text(pageMax + 1);
             }
         },
         error: function(jqXHR, textStatus, errorThrown) {
             if ($('#mailList')) {
-                $('#mailList').html('Unable to load message list')
+                $('#mailList').html('Unable to load message list');
             }
         }
-    })
+    });
 }
 
 function nextPage() {
@@ -497,20 +502,21 @@ function sendNewMail(force) {
     for (var i = 1; i < toEmailList.length; i++) {
         composedEmailString += "," + toEmailList[i];
     }
-    $('#newMailTo').val(composedEmailString)
-    var formValue = $('#mailNewForm').serialize()
+
+    $('#newMailTo').val(composedEmailString);
+    var formValue = $('#mailNewForm').serialize();
     $.ajax({
         url: mailbox + '/sendNewMail',
         data: formValue,
-        success: function(result) {
-            $('#newMailEditor').val('')
-            $('#newMailSubject').val('')
-            $('#newMailTo').val('')
-            closeMailNew()
-            showToast(Severity.Normal, 'Email succesfully send')
+        success: function() {
+            $('#newMailEditor').val('');
+            $('#newMailSubject').val('');
+            $('#newMailTo').val('');
+            closeMailNew();
+            showToast(Severity.Normal, 'Email succesfully send');
         },
         error: function(jqXHR, textStatus, errorThrown) {
-            showToast(Severity.Critical, 'Unable to send email: ' + errorThrown + ' ' + textStatus)
+            showToast(Severity.Critical, 'Unable to send email: ' + errorThrown + ' ' + textStatus);
         }
     });
 }
@@ -548,59 +554,87 @@ $(window).on('beforeunload', function(){
     }
 });
 
-window.onbeforeunload = function() {
-};
-
-
-var selectionList = new Array()
-function selectMail(id) {
-    var currentState = $("#mailCheckbox"+id).prop('checked')
-    if (currentState == false) {
-        const i = selectionList.indexOf(id);
-        if (i >= 0) {
-            selectionList.splice(i, 1);
-        }
+function toggleMailSelection(id) {
+    var currentState = $('#mailCheckbox'+id).prop('checked')
+    if (currentState) {
+        addToSelectionList(id);
     } else {
-        selectionList.push(id);
-    }
-
-    if (selectionList.length > 0) {
-        $("#selectAllCheckbox").prop('checked', true);
-        $('#multiActionsControls').css('display', 'flex');
-    } else {
-        $("#selectAllCheckbox").prop('checked', false);
-        $('#multiActionsControls').css('display', 'none');
+        removeFromSelectionList(id);
     }
 }
 
 function toogleMailSelection() {
-    var currentState = $("#selectAllCheckbox").prop('checked');
+    var currentState = $('#selectAllCheckbox').prop('checked');
     currentState = !currentState;
 
-    if (currentState) {
-        resetSelectionList()
-    } else {
-        selectionList = new Array();
-        $('[id^="mailCheckbox"]').prop('checked', true);
+    resetSelectionList();
+    if (!currentState) {
         $('[id^="mailCheckbox"]').each(function() {
-            selectionList.push(this.id.replace("mailCheckbox", ""))
+            addToSelectionList(this.id.replace('mailCheckbox', ''));
         })
-        $('#multiActionsControls').css('display', 'flex');
     }
+}
+
+function removeSelection() {
+    for (var i = 0; i < selectionList.length; ++i) {
+        removeMail(selectionList[i], function(){});
+    }
+}
+
+function toggleSelectionRead() {
+    var read = checkMailUnread();
+    for (var i = 0; i < selectionList.length; ++i) {
+        setRead(selectionList[i], read);
+    }
+}
+
+function checkMailUnread() {
+    for (var i = 0; i < selectionList.length; ++i) {
+        if ($('#mail'+selectionList[i]).hasClass('unread')) {
+            $('#multiActionsRead').attr('src', '/assets/unread.svg');
+            return true;
+        }
+    }
+    $('#multiActionsRead').attr('src', '/assets/read.svg');
+    return false;
+}
+
+//Mail selection list operations
+var selectionList = new Array();
+function addToSelectionList(mailId) {
+    const i = selectionList.indexOf(mailId);
+    if (i >= 0) {
+        return;
+    }
+    selectionList.push(mailId);
+    $('#mailCheckbox'+mailId).prop('checked', true);
+    $('#multiActionsControls').css('display', 'flex');
+    $('#selectAllCheckbox').prop('checked', true);
+    checkMailUnread();
+}
+
+function removeFromSelectionList(mailId) {
+    const i = selectionList.indexOf(mailId);
+    if (i < 0) {
+        console.log('Mail with id ' + mailId + ' is not in list');
+        return;
+    }
+
+    selectionList.splice(i, 1);
+    $('#'+mailId).prop('checked', false);
+    if (selectionList.length <= 0) {
+        $('#multiActionsControls').css('display', 'none');
+        $('#selectAllCheckbox').prop('checked', false);
+    }
+    checkMailUnread();
 }
 
 function resetSelectionList() {
     for (var i = 0; i < selectionList.length; ++i) {
-        $("#mailCheckbox"+selectionList[i]).prop('checked', false);
+        $('#mailCheckbox'+selectionList[i]).prop('checked', false);
     }
 
     selectionList = new Array();
-    $("#selectAllCheckbox").prop('checked', false);
+    $('#selectAllCheckbox').prop('checked', false);
     $('#multiActionsControls').css('display', 'none');
-}
-
-function removeSelected(callback) {
-}
-
-function readSelected(callback) {
 }

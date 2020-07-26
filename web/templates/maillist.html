@@ -4,7 +4,7 @@
     <div class="mailHeader noselect">
         <div style="display: block; margin: 10px 12px;">
             <label class="cbox" onclick="event.stopPropagation();">
-                <input type="checkbox" id="mailCheckbox{{.Id}}" onclick="selectMail('{{.Id}}'); event.stopPropagation(); return true;">
+                <input type="checkbox" id="mailCheckbox{{.Id}}" onclick="toggleMailSelection('{{.Id}}'); event.stopPropagation(); return true;">
                 <span></span>
             </label>
         </div>
@@ -22,8 +22,8 @@
     {{end}}
     <div id="mailControlPanel{{.Id}}" class="mailControlPanel">
         <div style="width: 100%; height: 100%; display: flex; flex-direction: row;">
-            <img id="readListIcon{{.Id}}" class="iconBtn" style="width: 20px; margin-left: 40px; margin-right: 10px;" onclick="toggleRead('{{.Id}}', 'readListIcon'); event.stopPropagation(); return false;" src="/assets/{{if .Read}}read{{else}}unread{{end}}.svg"/>
-            <img id="deleteListIcon" class="iconBtn" style="width: 20px; margin-right: 10px;" onclick="removeMail({{.Id}}, closeDetails); event.stopPropagation(); return false;" src="/assets/remove.svg"/>
+            <img id="readListIcon{{.Id}}" class="iconBtn" style="width: 20px; margin-left: 40px; margin-right: 10px;" onclick="toggleRead('{{.Id}}'); event.stopPropagation(); return false;" src="/assets/{{if .Read}}read{{else}}unread{{end}}.svg"/>
+            <img id="deleteListIcon" class="iconBtn" style="width: 20px; margin-right: 10px;" onclick="removeMail({{.Id}}, function(){}); event.stopPropagation(); return false;" src="/assets/remove.svg"/>
         </div>
     </div>
 </div>
