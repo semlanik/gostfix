@@ -367,6 +367,7 @@ function restoreMail(mailId, callback) {
         success: function() {
             if (currentFolder == 'Trash') {
                 $('#mail'+mailId).remove();
+                removeFromSelectionList(mailId);
             }
             if (callback) {
                 callback();
@@ -457,6 +458,7 @@ function updateMailList(folder, page) {
                 $('#mailList').html(data.html);
             }
             currentFolder = folder;
+            enableRestoreFunctionality();
             currentPage = page;
 
             if ($('#currentPageIndex')) {
@@ -581,6 +583,12 @@ function removeSelection() {
     }
 }
 
+function restoreSelection() {
+    for (var i = 0; i < selectionList.length; ++i) {
+        restoreMail(selectionList[i], function(){});
+    }
+}
+
 function toggleSelectionRead() {
     var read = checkMailUnread();
     for (var i = 0; i < selectionList.length; ++i) {
@@ -637,4 +645,14 @@ function resetSelectionList() {
     selectionList = new Array();
     $('#selectAllCheckbox').prop('checked', false);
     $('#multiActionsControls').css('display', 'none');
+}
+
+function enableRestoreFunctionality() {
+    if (currentFolder == 'Trash') {
+        $('#multiActionsRestore').css('display', 'block');
+        $('[id^="restoreListIcon"]').css('display', 'block');
+    } else {
+        $('#multiActionsRestore').css('display', 'none');
+        $('[id^="restoreListIcon"]').css('display', 'none');
+    }
 }

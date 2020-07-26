@@ -23,6 +23,7 @@
     <div id="mailControlPanel{{.Id}}" class="mailControlPanel">
         <div style="width: 100%; height: 100%; display: flex; flex-direction: row;">
             <img id="readListIcon{{.Id}}" class="iconBtn" style="width: 20px; margin-left: 40px; margin-right: 10px;" onclick="toggleRead('{{.Id}}'); event.stopPropagation(); return false;" src="/assets/{{if .Read}}read{{else}}unread{{end}}.svg"/>
+            <img id="restoreListIcon{{.Id}}" class="iconBtn" style="display: none; width: 24px; margin: auto 10px auto 0; height: 24px; flex: 0 1 auto;" onclick="restoreMail({{.Id}}, closeDetails); event.stopPropagation(); return false;" src="/assets/restore.svg"/>
             <img id="deleteListIcon" class="iconBtn" style="width: 20px; margin-right: 10px;" onclick="removeMail({{.Id}}, function(){}); event.stopPropagation(); return false;" src="/assets/remove.svg"/>
         </div>
     </div>
