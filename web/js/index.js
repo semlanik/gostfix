@@ -460,6 +460,7 @@ function updateMailList(folder, page) {
             currentFolder = folder;
             enableRestoreFunctionality();
             currentPage = page;
+            resetSelectionList();
 
             if ($('#currentPageIndex')) {
                 $('#currentPageIndex').text(currentPage + 1);
