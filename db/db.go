@@ -621,3 +621,9 @@ func (s *Storage) cleanupAttachments(user, email string) error {
 
 	return nil
 }
+
+func (s *Storage) CheckAttachment(user, attachment string) bool {
+	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
+	result := mailsCollection.FindOne(context.Background(), bson.M{"mail.body.attachments.id": attachment})
+	return result.Err() == nil
+}

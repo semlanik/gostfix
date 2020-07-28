@@ -33,20 +33,18 @@ import (
 	"git.semlanik.org/semlanik/gostfix/common"
 )
 
-func (s *Server) handleSecureZone(w http.ResponseWriter, r *http.Request) {
-	user, token := s.extractAuth(w, r)
-	if !s.authenticator.Verify(user, token) {
-		s.error(http.StatusUnauthorized, "You are not allowed to access this function", w)
-		return
+func (s *Server) handleSecureZone(w http.ResponseWriter, r *http.Request, user string) {
+	if user == "" {
+		log.Printf("User could not be empty. Invalid usage of handleMailRequest")
+		panic(nil)
 	}
 	s.error(http.StatusNotImplemented, "Admin panel is not implemented", w)
 }
 
-func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
-	user, token := s.extractAuth(w, r)
-	if !s.authenticator.Verify(user, token) {
-		s.error(http.StatusUnauthorized, "You are not allowed to access this function", w)
-		return
+func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request, user string) {
+	if user == "" {
+		log.Printf("User could not be empty. Invalid usage of handleMailRequest")
+		panic(nil)
 	}
 
 	switch r.Method {

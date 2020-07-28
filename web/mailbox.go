@@ -57,8 +57,12 @@ func (s *Server) handleMailbox(w http.ResponseWriter, user, email string) {
 	}))
 }
 
-func (s *Server) handleMailboxRequest(path, user string, mailbox int, w http.ResponseWriter, r *http.Request) {
-	log.Printf("Handle mailbox %s", path)
+func (s *Server) handleMailboxRequest(w http.ResponseWriter, r *http.Request, user string, urlParts []string) {
+	if user == "" {
+		log.Printf("User could not be empty. Invalid usage of handleMailboxRequest")
+		panic(nil)
+	}
+
 	emails, err := s.storage.GetEmails(user)
 
 	if err != nil || len(emails) <= 0 {
@@ -66,18 +70,25 @@ func (s *Server) handleMailboxRequest(path, user string, mailbox int, w http.Res
 		return
 	}
 
-	if len(emails) <= mailbox {
-		if path == "" {
-			http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
-		} else {
-			s.error(http.StatusInternalServerError, "Unable to access mailbox", w)
-		}
+	if len(urlParts) < 2 {
+		http.Redirect(w, r, "/m/0", http.StatusTemporaryRedirect)
 		return
 	}
 
-	switch path {
-	case "":
+	mailbox, err := strconv.Atoi(urlParts[1])
+	if err != nil || mailbox < 0 || len(emails) <= mailbox {
+		http.Redirect(w, r, "/m/0", http.StatusTemporaryRedirect)
+		return
+	}
+
+	if len(urlParts) < 3 {
 		s.handleMailbox(w, user, emails[mailbox])
+		return
+	}
+
+	log.Printf("Handle mailbox function %s", urlParts[2])
+
+	switch urlParts[2] {
 	case "folders":
 		s.handleFolders(w, user, emails[mailbox])
 	case "folderStat":
@@ -91,7 +102,7 @@ func (s *Server) handleMailboxRequest(path, user string, mailbox int, w http.Res
 	case "notifierSubscribe":
 		s.Notifier.handleNotifierRequest(w, r, emails[mailbox])
 	default:
-		http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "/m/0", http.StatusTemporaryRedirect)
 	}
 }
 
@@ -233,7 +244,6 @@ func (s *Server) extractFolder(email string, r *http.Request) string {
 }
 
 func (s *Server) handleNewMail(w http.ResponseWriter, r *http.Request, user, email string) {
-
 	rawMail := &common.Mail{
 		Header: &common.MailHeader{
 			From:    email,

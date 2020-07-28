@@ -26,9 +26,8 @@
 var currentFolder = '';
 var currentPage = 0;
 var currentMail = '';
-var mailbox = '';
+var mailbox = null;
 var pageMax = 10;
-const mailboxRegex = /^(\/m\d+)/g;
 const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 const emailEndRegex = /[;,\s]/g;
 
@@ -59,11 +58,11 @@ $(document).ready(function(){
         type: 'POST'
     });
 
-    urlPaths = mailboxRegex.exec($(location).attr('pathname'));
-    if (urlPaths != null && urlPaths.length === 2) {
-        mailbox = urlPaths[0];
+    urlPaths = $(location).attr('pathname').split('/');
+    if (urlPaths != null && urlPaths.length >= 2 && urlPaths[1] == 'm') {
+        mailbox = urlPaths[2];
     } else {
-        mailbox = '';
+        mailbox = null;
     }
 
     $(window).bind('hashchange', onHashChanged);
@@ -219,13 +218,12 @@ function requestMail(mailId) {
 }
 
 function loadFolders() {
-    if (mailbox == '') {
-        $('#folders').html('Unable to load folder list');
-        return;
+    if (mailbox === null) {
+        return
     }
 
     $.ajax({
-        url: mailbox + '/folders',
+        url: '/m/' + mailbox + '/folders',
         success: function(result) {
             folderList = jQuery.parseJSON(result);
             for(var i = 0; i < folderList.folders.length; i++) {
@@ -241,8 +239,12 @@ function loadFolders() {
 }
 
 function folderStat(folder) {
+    if (mailbox === null) {
+        return
+    }
+
     $.ajax({
-        url: mailbox + '/folderStat',
+        url: '/m/' + mailbox + '/folderStat',
         data: {
             folder: folder
         },
@@ -271,8 +273,12 @@ function closeMailNew() {
 }
 
 function loadStatusLine() {
+    if (mailbox === null) {
+        return
+    }
+
     $.ajax({
-        url: mailbox + '/statusLine',
+        url: '/m/' + mailbox + '/statusLine',
         success: function(result) {
             $('#statusLine').html(result);
         },
@@ -445,7 +451,11 @@ function setMailNewVisible(visible) {
 }
 
 function updateMailList(folder, page) {
-    if (mailbox == '' || folder == '') {
+    if (mailbox === null) {
+        return
+    }
+
+    if (folder == '') {
         if ($('#mailList')) {
             $('#mailList').html('Unable to load message list');
         }
@@ -453,7 +463,7 @@ function updateMailList(folder, page) {
     }
 
     $.ajax({
-        url: mailbox + '/mailList',
+        url: '/m/' + mailbox + '/mailList',
         data: {
             folder: folder,
             page: page
@@ -500,6 +510,10 @@ function toggleDropDown(dd) {
 }
 
 function sendNewMail(force) {
+    if (mailbox === null) {
+        return
+    }
+
     if (toEmailList.length <= 0) {
         return;
     }
@@ -517,7 +531,7 @@ function sendNewMail(force) {
     $('#newMailTo').val(composedEmailString);
     var formValue = $('#mailNewForm').serialize();
     $.ajax({
-        url: mailbox + '/sendNewMail',
+        url: '/m/' + mailbox + '/sendNewMail',
         data: formValue,
         success: function() {
             $('#newMailEditor').val('');
@@ -549,7 +563,7 @@ function connectNotifier() {
     if (window.location.protocol  !== 'https:') {
         protocol = 'ws://';
     }
-    notifierSocket = new WebSocket(protocol + window.location.host + mailbox + '/notifierSubscribe');
+    notifierSocket = new WebSocket(protocol + window.location.host + '/m/' + mailbox + '/notifierSubscribe');
     notifierSocket.onmessage = function (e) {
         for (var i = 0; i < folders.length; i++) {
             folderStat(folders[i]);

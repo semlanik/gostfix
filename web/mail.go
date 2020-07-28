@@ -36,11 +36,10 @@ import (
 	"git.semlanik.org/semlanik/gostfix/utils"
 )
 
-func (s *Server) handleMailRequest(w http.ResponseWriter, r *http.Request, mailId string) {
-	user, token := s.extractAuth(w, r)
-	if !s.authenticator.Verify(user, token) {
-		s.error(http.StatusUnauthorized, "You are not allowed to access this function", w)
-		return
+func (s *Server) handleMailRequest(w http.ResponseWriter, r *http.Request, user, mailId string) {
+	if user == "" {
+		log.Printf("User could not be empty. Invalid usage of handleMailRequest")
+		panic(nil)
 	}
 
 	if mailId == "" {

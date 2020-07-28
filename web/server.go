@@ -27,17 +27,14 @@ package web
 
 import (
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 
 	auth "git.semlanik.org/semlanik/gostfix/auth"
 	common "git.semlanik.org/semlanik/gostfix/common"
 	"git.semlanik.org/semlanik/gostfix/config"
 	db "git.semlanik.org/semlanik/gostfix/db"
-	utils "git.semlanik.org/semlanik/gostfix/utils"
 
 	sessions "github.com/gorilla/sessions"
 )
@@ -105,176 +102,97 @@ func (s *Server) Run() {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.URL.Path)
-	fmt.Println(r.Method)
-	if utils.StartsWith(r.URL.Path, "/css/") ||
-		utils.StartsWith(r.URL.Path, "/assets/") ||
-		utils.StartsWith(r.URL.Path, "/js/") {
+	log.Printf("%s %s", r.Method, r.URL.Path)
+	urlParts := strings.Split(r.URL.Path, "/")[1:]
+	if len(urlParts) == 0 || urlParts[0] == "" {
+		http.Redirect(w, r, "/m/0", http.StatusTemporaryRedirect)
+		return
+	}
+
+	switch urlParts[0] {
+	case "css":
+		fallthrough
+	case "assets":
+		fallthrough
+	case "js":
 		s.fileServer.ServeHTTP(w, r)
-	} else if utils.StartsWith(r.URL.Path, "/attachment") {
-		s.attachmentsServer.ServeHTTP(w, r)
-	} else if cap := utils.RegExpUtilsInstance().MailboxFinder.FindStringSubmatch(r.URL.Path); len(cap) == 3 {
-		user, token := s.extractAuth(w, r)
-		if !s.authenticator.Verify(user, token) {
-			s.logout(w, r)
+	case "login":
+		s.handleLogin(w, r)
+	case "logout":
+		s.handleLogout(w, r)
+	case "register":
+		s.handleRegister(w, r)
+	case "checkEmail":
+		s.handleCheckEmail(w, r)
+	default:
+		s.handleSecure(w, r, urlParts)
+	}
+}
+
+func (s *Server) handleSecure(w http.ResponseWriter, r *http.Request, urlParts []string) {
+	user, token := s.extractAuth(w, r)
+	if !s.authenticator.Verify(user, token) {
+		if r.Method == "GET" && urlParts[0] == "m" {
 			http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
-			return
+		} else {
+			s.error(http.StatusUnauthorized, "You are not allowed to access this function", w)
 		}
-
-		mailbox, err := strconv.Atoi(cap[1])
-		if err != nil || mailbox < 0 {
-			http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
-			return
-		}
-
-		path := cap[2]
-
-		s.handleMailboxRequest(path, user, mailbox, w, r)
-	} else {
-		urlParts := strings.Split(r.URL.Path, "/")
-		if len(urlParts) < 2 {
-			http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
-			return
-		}
-
-		fmt.Println("urlParts:" + urlParts[1])
-		switch urlParts[1] {
-		case "login":
-			s.handleLogin(w, r)
-		case "logout":
-			s.handleLogout(w, r)
-		case "register":
-			s.handleRegister(w, r)
-		case "checkEmail":
-			s.handleCheckEmail(w, r)
-		case "mail":
-			if len(urlParts) == 3 {
-				s.handleMailRequest(w, r, urlParts[2])
-			} else {
-				//TODO: return mail list here
-			}
-		case "settings":
-			s.handleSettings(w, r)
-		case "admin":
-			s.handleSecureZone(w, r)
-		default:
-			http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
-		}
-	}
-}
-
-func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
-	// if session, err := s.sessionStore.Get(r, CookieSessionToken); err == nil && session.Values["user"] != nil && session.Values["token"] != nil {
-	// 	http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
-	// 	return
-	// }
-	if !config.ConfigInstance().RegistrationEnabled {
-		s.error(http.StatusNotImplemented, "Registration is disabled on this server", w)
 		return
 	}
 
-	if err := r.ParseForm(); err == nil {
-		user := r.FormValue("user")
-		password := r.FormValue("password")
-		fullName := r.FormValue("fullName")
-		if user != "" && password != "" && fullName != "" {
-			ok, email := s.checkEmail(user)
-			if ok && len(password) < 128 && len(fullName) < 128 && utils.RegExpUtilsInstance().FullNameChecker.MatchString(fullName) {
-				err := s.storage.AddUser(email, password, fullName)
-				if err != nil {
-					log.Println(err.Error())
-					s.error(http.StatusInternalServerError, "Unable to create user", w)
-					return
-				}
-
-				s.scanner.Reconfigure()
-				token, _ := s.authenticator.Login(email, password)
-				s.login(email, token, w, r)
-				return
-			}
+	switch urlParts[0] {
+	case "m":
+		s.handleMailboxRequest(w, r, user, urlParts)
+	case "attachment":
+		if len(urlParts) == 2 {
+			s.handleAttachment(w, r, user, urlParts[1])
+		} else {
+			s.error(http.StatusBadRequest, "Invalid attachments request", w)
 		}
+	case "mail":
+		if len(urlParts) == 2 {
+			s.handleMailRequest(w, r, user, urlParts[1])
+		} else {
+			//TODO: return mail list here
+		}
+	case "settings":
+		s.handleSettings(w, r, user)
+	case "admin":
+		s.handleSecureZone(w, r, user)
+	default:
+		http.Redirect(w, r, "/m/0", http.StatusTemporaryRedirect)
 	}
-
-	fmt.Fprint(w, s.templater.ExecuteRegister(&struct {
-		Version string
-		Domain  string
-	}{common.Version, config.ConfigInstance().MyDomain}))
 }
 
-func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
-	//Check passed in form login/password pair first
-	if err := r.ParseForm(); err == nil {
-		user := r.FormValue("user")
-		password := r.FormValue("password")
-		token, ok := s.authenticator.Login(user, password)
-		if ok {
-			s.login(user, token, w, r)
-			return
-		}
+func (s *Server) handleAttachment(w http.ResponseWriter, r *http.Request, user, attachment string) {
+	if user == "" {
+		log.Printf("User could not be empty. Invalid usage of handleMailRequest")
+		panic(nil)
 	}
 
-	//Check if user already logged in and entered login page accidently
-	if s.authenticator.Verify(s.extractAuth(w, r)) {
-		http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
+	if r.Method != "GET" {
+		s.error(http.StatusNotImplemented, "You only may download attachments", w)
 		return
 	}
 
-	var signupTemplate template.HTML
-	if config.ConfigInstance().RegistrationEnabled {
-		signupTemplate = template.HTML(s.templater.ExecuteSignup(""))
-	} else {
-		signupTemplate = ""
-	}
-
-	//Otherwise make sure user logged out and show login page
-	s.logout(w, r)
-	fmt.Fprint(w, s.templater.ExecuteLogin(&struct {
-		Version string
-		Signup  template.HTML
-	}{common.Version, signupTemplate}))
-}
-
-func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
-	s.logout(w, r)
-	http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
-}
-
-func (s *Server) handleCheckEmail(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err == nil {
-		if ok, _ := s.checkEmail(r.FormValue("user")); ok {
-			w.Write([]byte{0})
-			return
-		}
-		s.error(http.StatusNotAcceptable, "Email exists", w)
+	if !s.storage.CheckAttachment(user, attachment) {
+		s.error(http.StatusNotFound, "Attachment not found", w)
 		return
 	}
-	s.error(http.StatusBadRequest, "Invalid arguments", w)
-	return
+
+	s.attachmentsServer.ServeHTTP(w, r)
 }
 
-func (s *Server) checkEmail(user string) (bool, string) {
-	email := user + "@" + config.ConfigInstance().MyDomain
-	return utils.RegExpUtilsInstance().EmailChecker.MatchString(email) && !s.storage.CheckEmailExists(email), email
-}
-
-func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
+func (s *Server) extractAuth(w http.ResponseWriter, r *http.Request) (user, token string) {
 	session, err := s.sessionStore.Get(r, CookieSessionToken)
-	if err == nil {
-		if session.Values["user"] != nil && session.Values["token"] != nil {
-			s.authenticator.Logout(session.Values["user"].(string), session.Values["token"].(string))
-		}
-		session.Values["user"] = ""
-		session.Values["token"] = ""
-		session.Save(r, w)
+	if err != nil {
+		log.Printf("Unable to read user session %s\n", err)
+		return
 	}
-}
+	user, _ = session.Values["user"].(string)
+	token, _ = session.Values["token"].(string)
 
-func (s *Server) login(user, token string, w http.ResponseWriter, r *http.Request) {
-	session, _ := s.sessionStore.Get(r, CookieSessionToken)
-	session.Values["user"] = user
-	session.Values["token"] = token
-	session.Save(r, w)
-	http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
+	return
 }
 
 func (s *Server) error(code int, text string, w http.ResponseWriter) {
@@ -288,16 +206,4 @@ func (s *Server) error(code int, text string, w http.ResponseWriter) {
 		Text:    text,
 		Version: common.Version,
 	}))
-}
-
-func (s *Server) extractAuth(w http.ResponseWriter, r *http.Request) (user, token string) {
-	session, err := s.sessionStore.Get(r, CookieSessionToken)
-	if err != nil {
-		log.Printf("Unable to read user session %s\n", err)
-		return
-	}
-	user, _ = session.Values["user"].(string)
-	token, _ = session.Values["token"].(string)
-
-	return
 }
