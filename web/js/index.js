@@ -195,10 +195,8 @@ function onHashChanged() {
 function requestMail(mailId) {
     if (mailId != "") {
         $.ajax({
-            url: '/mail',
-            data: {
-                mailId: mailId
-            },
+            url: '/mail/' + mailId,
+            type: 'GET',
             success: function(result) {
                 currentMail = mailId;
                 if ($('#readListIcon'+mailId)) {
@@ -305,9 +303,9 @@ function localDate(elementToChange, timestamp) {
 
 function setRead(mailId, read) {
     $.ajax({
-        url: '/setRead',
-        data: {mailId: mailId,
-               read: read},
+        url: '/mail/'+mailId,
+        type: 'PATCH',
+        data: {read: read},
         success: function(result) {
             if (read) {
                 if ($('#readIcon'+mailId)) {
@@ -342,10 +340,16 @@ function toggleRead(mailId) {
 }
 
 function removeMail(mailId, callback) {
-    var url = currentFolder != 'Trash' ? '/remove' : '/delete';
+    var method = 'PATCH';
+    var data = { trash: 'true' };
+    if (currentFolder == 'Trash') {
+        method = 'DELETE';
+        data = null;
+    }
     $.ajax({
-        url: url,
-        data: {mailId: mailId},
+        url: '/mail/'+mailId,
+        type: method,
+        data: data,
         success: function() {
             removeFromSelectionList(mailId);
             $('#mail'+mailId).remove();
@@ -356,14 +360,16 @@ function removeMail(mailId, callback) {
             folderStat('Trash');//TODO: receive statistic from websocket
         },
         error: function(jqXHR, textStatus, errorThrown) {
+            showToast(Severity.Critical, 'Unable to remove mail: ' + errorThrown + ' ' + textStatus);
         }
     });
 }
 
 function restoreMail(mailId, callback) {
     $.ajax({
-        url: '/restore',
-        data: {mailId: mailId},
+        url: '/mail/'+mailId,
+        type: 'PATCH',
+        data: {trash: 'false'},
         success: function() {
             if (currentFolder == 'Trash') {
                 $('#mail'+mailId).remove();
@@ -377,6 +383,7 @@ function restoreMail(mailId, callback) {
             }
         },
         error: function(jqXHR, textStatus, errorThrown) {
+            showToast(Severity.Critical, 'Unable to restore mail: ' + errorThrown + ' ' + textStatus);
         }
     });
 }
@@ -384,6 +391,7 @@ function restoreMail(mailId, callback) {
 function downloadAttachment(attachmentId, filename) {
     $.ajax({
         url: '/attachment/' + attachmentId,
+        type: 'GET',
         xhrFields: {
             responseType: 'blob'
         },

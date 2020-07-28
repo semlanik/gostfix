@@ -39,35 +39,33 @@ func (s *Server) handleSecureZone(w http.ResponseWriter, r *http.Request) {
 		s.error(http.StatusUnauthorized, "You are not allowed to access this function", w)
 		return
 	}
-
-	switch r.URL.Path {
-	case "/settings":
-		s.handleSettings(w, user)
-	case "/update":
-		s.handleUpdate(w, r, user)
-		// case "/admin":
-		// case "/addUser":
-		// 	//TODO:
-		// case "/removeUser":
-		// 	//TODO:
-		// case "/changeUser":
-		// 	//TODO:
-	}
+	s.error(http.StatusNotImplemented, "Admin panel is not implemented", w)
 }
 
-func (s *Server) handleSettings(w http.ResponseWriter, user string) {
-	info, err := s.storage.GetUserInfo(user)
-	if err != nil {
-		s.error(http.StatusInternalServerError, "Unable to obtain user information", w)
+func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
+	user, token := s.extractAuth(w, r)
+	if !s.authenticator.Verify(user, token) {
+		s.error(http.StatusUnauthorized, "You are not allowed to access this function", w)
 		return
 	}
-	fmt.Fprintf(w, s.templater.ExecuteSettings(&struct {
-		Version  string
-		FullName string
-	}{common.Version, info.FullName}))
+
+	switch r.Method {
+	case "GET":
+		info, err := s.storage.GetUserInfo(user)
+		if err != nil {
+			s.error(http.StatusInternalServerError, "Unable to obtain user information", w)
+			return
+		}
+		fmt.Fprintf(w, s.templater.ExecuteSettings(&struct {
+			Version  string
+			FullName string
+		}{common.Version, info.FullName}))
+	case "PATCH":
+		s.handleSettingsUpdate(w, r, user)
+	}
 }
 
-func (s *Server) handleUpdate(w http.ResponseWriter, r *http.Request, user string) {
+func (s *Server) handleSettingsUpdate(w http.ResponseWriter, r *http.Request, user string) {
 	if err := r.ParseForm(); err != nil {
 		s.error(http.StatusUnauthorized, "Password entered is invalid", w)
 		return

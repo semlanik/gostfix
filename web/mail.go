@@ -36,31 +36,25 @@ import (
 	"git.semlanik.org/semlanik/gostfix/utils"
 )
 
-func (s *Server) handleMailRequest(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleMailRequest(w http.ResponseWriter, r *http.Request, mailId string) {
 	user, token := s.extractAuth(w, r)
 	if !s.authenticator.Verify(user, token) {
 		s.error(http.StatusUnauthorized, "You are not allowed to access this function", w)
 		return
 	}
 
-	mailId := r.FormValue("mailId")
-
 	if mailId == "" {
 		s.error(http.StatusBadRequest, "Invalid mail id requested", w)
 		return
 	}
 
-	switch r.URL.Path {
-	case "/mail":
+	switch r.Method {
+	case "GET":
 		s.handleMailDetails(w, user, mailId)
-	case "/setRead":
-		s.handleSetRead(w, r, user, mailId)
-	case "/remove":
-		s.handleRemove(w, user, mailId)
-	case "/restore":
-		s.handleRestore(w, user, mailId)
-	case "/delete":
-		s.handleDelete(w, user, mailId)
+	case "DELETE":
+		s.handleMailDelete(w, user, mailId)
+	case "PATCH":
+		s.handleMailUpdate(w, r, user, mailId)
 	}
 }
 
@@ -101,28 +95,36 @@ func (s *Server) handleMailDetails(w http.ResponseWriter, user, mailId string) {
 	}))
 }
 
-func (s *Server) handleSetRead(w http.ResponseWriter, r *http.Request, user, mailId string) {
-	read := r.FormValue("read") == "true"
-	s.storage.SetRead(user, mailId, read)
+func (s *Server) handleMailUpdate(w http.ResponseWriter, r *http.Request, user, mailId string) {
+	updateMap := map[string]interface{}{}
+
+	if r.FormValue("read") == "true" {
+		updateMap["read"] = true
+	} else if r.FormValue("read") == "false" {
+		updateMap["read"] = false
+	}
+
+	if r.FormValue("trash") == "true" {
+		updateMap["trash"] = true
+	} else if r.FormValue("trash") == "false" {
+		updateMap["trash"] = false
+	}
+
+	if len(updateMap) == 0 {
+		s.error(http.StatusBadRequest, "Unable to proccess mail", w)
+		return
+	}
+
+	err := s.storage.UpdateMail(user, mailId, &updateMap)
+	if err != nil {
+		s.error(http.StatusInternalServerError, "Unable to proccess mail", w)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte{})
 }
 
-func (s *Server) handleRemove(w http.ResponseWriter, user, mailId string) {
-	err := s.storage.MoveMail(user, mailId, common.Trash)
-	if err != nil {
-		s.error(http.StatusInternalServerError, "Could not move email to trash", w)
-	}
-}
-
-func (s *Server) handleRestore(w http.ResponseWriter, user, mailId string) {
-	err := s.storage.RestoreMail(user, mailId)
-	if err != nil {
-		s.error(http.StatusInternalServerError, "Could not move email to trash", w)
-	}
-}
-
-func (s *Server) handleDelete(w http.ResponseWriter, user, mailId string) {
+func (s *Server) handleMailDelete(w http.ResponseWriter, user, mailId string) {
 	log.Printf("Delete mail")
 	err := s.storage.DeleteMail(user, mailId)
 	if err != nil {

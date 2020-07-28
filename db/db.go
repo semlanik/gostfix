@@ -474,6 +474,17 @@ func (s *Storage) SetRead(user string, id string, read bool) error {
 	return err
 }
 
+func (s *Storage) UpdateMail(user string, id string, mailMap interface{}) error {
+	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
+
+	oId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": mailMap})
+	return err
+}
+
 func (s *Storage) GetUsers() (users []string, err error) {
 	return nil, nil
 }

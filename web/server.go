@@ -31,6 +31,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	auth "git.semlanik.org/semlanik/gostfix/auth"
 	common "git.semlanik.org/semlanik/gostfix/common"
@@ -105,6 +106,7 @@ func (s *Server) Run() {
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.URL.Path)
+	fmt.Println(r.Method)
 	if utils.StartsWith(r.URL.Path, "/css/") ||
 		utils.StartsWith(r.URL.Path, "/assets/") ||
 		utils.StartsWith(r.URL.Path, "/js/") {
@@ -129,30 +131,31 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		s.handleMailboxRequest(path, user, mailbox, w, r)
 	} else {
-		switch r.URL.Path {
-		case "/login":
+		urlParts := strings.Split(r.URL.Path, "/")
+		if len(urlParts) < 2 {
+			http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
+			return
+		}
+
+		fmt.Println("urlParts:" + urlParts[1])
+		switch urlParts[1] {
+		case "login":
 			s.handleLogin(w, r)
-		case "/logout":
+		case "logout":
 			s.handleLogout(w, r)
-		case "/register":
+		case "register":
 			s.handleRegister(w, r)
-		case "/checkEmail":
+		case "checkEmail":
 			s.handleCheckEmail(w, r)
-		case "/mail":
-			fallthrough
-		case "/setRead":
-			fallthrough
-		case "/remove":
-			fallthrough
-		case "/restore":
-			fallthrough
-		case "/delete":
-			s.handleMailRequest(w, r)
-		case "/settings":
-			fallthrough
-		case "/update":
-			fallthrough
-		case "/admin":
+		case "mail":
+			if len(urlParts) == 3 {
+				s.handleMailRequest(w, r, urlParts[2])
+			} else {
+				//TODO: return mail list here
+			}
+		case "settings":
+			s.handleSettings(w, r)
+		case "admin":
 			s.handleSecureZone(w, r)
 		default:
 			http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
