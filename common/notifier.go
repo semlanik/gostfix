@@ -27,5 +27,5 @@ package common
 
 type Notifier interface {
 	NotifyMaiboxUpdate(email string)
-	NotifyNewMail(email string, m Mail)
+	NotifyNewMail(email string, m MailMetadata)
 }

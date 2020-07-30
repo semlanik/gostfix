@@ -116,7 +116,12 @@ body {
 }
 
 #copyrightBox {
-    color: var(--secondary-dark-color)
+    color: var(--secondary-dark-color);
+}
+
+#copyrightBox a {
+    color: var(--secondary-dark-color);
+    text-decoration: underline;
 }
 
 .toEmail.valid {

@@ -36,7 +36,7 @@ gostfix only works on Linux-like operating systems
     }
 
     # Add web sockets proxy
-    location ~ ^/m[\d]+/notifierSubscribe$ {
+    location ~ ^/m/[\d]+/notifierSubscribe$ {
         proxy_pass http://localhost:65200;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;

@@ -564,11 +564,18 @@ function connectNotifier() {
         protocol = 'ws://';
     }
     notifierSocket = new WebSocket(protocol + window.location.host + '/m/' + mailbox + '/notifierSubscribe');
-    notifierSocket.onmessage = function (e) {
-        for (var i = 0; i < folders.length; i++) {
-            folderStat(folders[i]);
+    notifierSocket.onmessage = function (ev) {
+        jsonData = JSON.parse(ev.data);
+        switch (jsonData.type) {
+        case 'mail':
+            $('#mailList').prepend(jsonData.data.html);
+            for (var i = 0; i < folders.length; i++) {
+                if (folders[i] == jsonData.data.folder) {
+                    folderStat(folders[i]);
+                }
+            }
+            break;
         }
-        updateMailList(currentFolder, currentPage);
     }
 }
 

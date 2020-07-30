@@ -34,6 +34,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	common "git.semlanik.org/semlanik/gostfix/common"
@@ -48,6 +49,15 @@ import (
 
 	config "git.semlanik.org/semlanik/gostfix/config"
 )
+
+type StuctNotifiers struct {
+	notifiers     []common.Notifier
+	notifiersLock sync.Mutex
+}
+
+var notifiers StuctNotifiers = StuctNotifiers{
+	notifiers: []common.Notifier{},
+}
 
 type Storage struct {
 	db                  *mongo.Database
@@ -263,14 +273,14 @@ func (s *Storage) RemoveEmail(user string, email string) error {
 }
 
 func (s *Storage) SaveMail(email, folder string, m *common.Mail, read bool) error {
-	result := &struct {
+	user := &struct {
 		User string
 	}{}
 
-	s.emailsCollection.FindOne(context.Background(), bson.M{"email": email}).Decode(result)
+	s.emailsCollection.FindOne(context.Background(), bson.M{"email": email}).Decode(user)
 
-	mailsCollection := s.db.Collection(qualifiedMailCollection(result.User))
-	mailsCollection.InsertOne(context.Background(), &struct {
+	mailsCollection := s.db.Collection(qualifiedMailCollection(user.User))
+	result, err := mailsCollection.InsertOne(context.Background(), &struct {
 		Email  string
 		Mail   *common.Mail
 		Folder string
@@ -283,6 +293,21 @@ func (s *Storage) SaveMail(email, folder string, m *common.Mail, read bool) erro
 		Read:   read,
 		Trash:  false,
 	}, options.InsertOne().SetBypassDocumentValidation(true))
+
+	if err != nil {
+		return err
+	}
+
+	mail := *m //deep copy for multithreading
+	s.notifyNewMail(email, common.MailMetadata{
+		Id:     result.InsertedID.(primitive.ObjectID).Hex(),
+		Read:   false,
+		Trash:  false,
+		Folder: folder,
+		User:   user.User,
+		Mail:   &mail,
+	})
+
 	return nil
 }
 
@@ -626,4 +651,28 @@ func (s *Storage) CheckAttachment(user, attachment string) bool {
 	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
 	result := mailsCollection.FindOne(context.Background(), bson.M{"mail.body.attachments.id": attachment})
 	return result.Err() == nil
+}
+
+func (s *Storage) RegisterNotifier(notifier common.Notifier) {
+	if notifier != nil {
+		notifiers.notifiersLock.Lock()
+		defer notifiers.notifiersLock.Unlock()
+		notifiers.notifiers = append(notifiers.notifiers, notifier)
+	}
+}
+
+func (s *Storage) notifyNewMail(email string, mail common.MailMetadata) {
+	notifiers.notifiersLock.Lock()
+	defer notifiers.notifiersLock.Unlock()
+	for _, notifier := range notifiers.notifiers {
+		notifier.NotifyNewMail(email, mail)
+	}
+}
+
+func (s *Storage) notifyMailboxUpdate(email string) {
+	notifiers.notifiersLock.Lock()
+	defer notifiers.notifiersLock.Unlock()
+	for _, notifier := range notifiers.notifiers {
+		notifier.NotifyMaiboxUpdate(email)
+	}
 }

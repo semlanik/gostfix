@@ -100,7 +100,6 @@ func parseFile(file *utils.LockedFile) []*common.Mail {
 				emails = append(emails, pd.email)
 			}
 			pd.reset()
-			fmt.Println("Found new email" + currentText)
 			continue
 		}
 

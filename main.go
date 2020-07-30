@@ -51,8 +51,6 @@ func NewGofixEngine() (e *GofixEngine) {
 		web:     web.NewServer(mailScanner),
 		sasl:    saslService,
 	}
-
-	e.scanner.RegisterNotifier(e.web.Notifier)
 	return
 }
 

@@ -100,7 +100,7 @@ func (s *Server) handleMailboxRequest(w http.ResponseWriter, r *http.Request, us
 	case "sendNewMail":
 		s.handleNewMail(w, r, user, emails[mailbox])
 	case "notifierSubscribe":
-		s.Notifier.handleNotifierRequest(w, r, emails[mailbox])
+		s.notifier.handleNotifierRequest(w, r, emails[mailbox])
 	default:
 		http.Redirect(w, r, "/m/0", http.StatusTemporaryRedirect)
 	}

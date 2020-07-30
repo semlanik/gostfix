@@ -26,6 +26,7 @@
 package web
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -37,10 +38,11 @@ import (
 
 type websocketChannel struct {
 	connection *websocket.Conn
-	channel    chan *common.Mail
+	channel    chan *common.MailMetadata
 }
 
 type webNotifier struct {
+	server        *Server
 	notifiers     map[string]*websocketChannel
 	notifiersLock sync.Mutex
 }
@@ -53,14 +55,14 @@ func NewWebNotifier() *webNotifier {
 
 func (wn *webNotifier) NotifyMaiboxUpdate(email string) {
 	if channel, ok := wn.getNotifier(email); ok {
-		channel.channel <- &common.Mail{} //TODO: Dummy notificator for now, later need to make separate interface to handle this
+		channel.channel <- &common.MailMetadata{} //TODO: Dummy notificator for now, later need to make separate interface to handle this
 	}
 }
 
-func (wn *webNotifier) NotifyNewMail(email string, m common.Mail) {
-	// if channel, ok := wn.getNotifier(email); ok {
-	// 	channel.channel <- &m
-	// }
+func (wn *webNotifier) NotifyNewMail(email string, m common.MailMetadata) {
+	if channel, ok := wn.getNotifier(email); ok {
+		channel.channel <- &m
+	}
 	//TODO: this functionality needs JS support to create new mails from templates
 }
 
@@ -73,13 +75,14 @@ func (wn *webNotifier) handleNotifierRequest(w http.ResponseWriter, r *http.Requ
 	fmt.Printf("New web socket session start %s\n", email)
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
+		log.Printf("Could not upgrade websocket %s\n", err)
 		http.Error(w, "Could not open websocket connection", http.StatusBadRequest)
 		return
 	}
 
 	c := &websocketChannel{
 		connection: conn,
-		channel:    make(chan *common.Mail, 10),
+		channel:    make(chan *common.MailMetadata, 10),
 	}
 	wn.addNotifier(email, c)
 
@@ -94,11 +97,24 @@ func (wn *webNotifier) handleNotifierRequest(w http.ResponseWriter, r *http.Requ
 }
 
 func (wn *webNotifier) handleNotifications(c *websocketChannel) {
-	//Do nothing for now
 	for {
 		select {
 		case newMail := <-c.channel:
-			err := c.connection.WriteJSON(newMail)
+			out, err := json.Marshal(&struct {
+				Type string      `json:"type"`
+				Data interface{} `json:"data"`
+			}{
+				Type: "mail",
+				Data: &struct {
+					Folder string `json:"folder"`
+					HTML   string `json:"html"`
+				}{
+					Folder: newMail.Folder,
+					HTML:   wn.server.templater.ExecuteMailList([]*common.MailMetadata{newMail}),
+				},
+			})
+
+			err = c.connection.WriteMessage(websocket.TextMessage, out)
 			if err != nil {
 				log.Println(err.Error())
 				return

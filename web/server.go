@@ -64,7 +64,7 @@ type Server struct {
 	templater         *Templater
 	sessionStore      *sessions.CookieStore
 	storage           *db.Storage
-	Notifier          *webNotifier
+	notifier          *webNotifier
 	scanner           common.Scanner
 }
 
@@ -89,9 +89,12 @@ func NewServer(scanner common.Scanner) *Server {
 		attachmentsServer: http.StripPrefix("/attachment/", http.FileServer(http.Dir(config.ConfigInstance().AttachmentsPath))),
 		sessionStore:      sessions.NewCookieStore(make([]byte, 32)),
 		storage:           storage,
-		Notifier:          NewWebNotifier(),
+		notifier:          NewWebNotifier(),
 		scanner:           scanner,
 	}
+
+	s.notifier.server = s
+	s.storage.RegisterNotifier(s.notifier)
 
 	return s
 }
@@ -152,8 +155,6 @@ func (s *Server) handleSecure(w http.ResponseWriter, r *http.Request, urlParts [
 	case "mail":
 		if len(urlParts) == 2 {
 			s.handleMailRequest(w, r, user, urlParts[1])
-		} else {
-			//TODO: return mail list here
 		}
 	case "settings":
 		s.handleSettings(w, r, user)
