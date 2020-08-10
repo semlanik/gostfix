@@ -34,6 +34,7 @@ func NewMail() *Mail {
 
 type MailMetadata struct {
 	Id     string `bson:"_id"`
+	Email  string
 	User   string
 	Mail   *Mail
 	Read   bool

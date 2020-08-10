@@ -205,7 +205,6 @@ function requestMail(mailId) {
                 $('#mail'+mailId).addClass('read');
                 $('#mailDetails').html(result);
                 setDetailsVisible(true);
-                folderStat(currentFolder);//TODO: receive statistic from websocket
                 checkMailUnread();
             },
             error: function(jqXHR, textStatus, errorThrown) {
@@ -217,6 +216,17 @@ function requestMail(mailId) {
     }
 }
 
+function updateFolderStat(stat) {
+    var folder = stat.folder
+    if (stat.unread > 0) {
+        $('#folderStats'+folder).text(stat.unread);
+        $('#folder'+folder).addClass('unread');
+    } else {
+        $('#folder'+folder).removeClass('unread');
+        $('#folderStats'+folder).text("");
+    }
+}
+
 function loadFolders() {
     if (mailbox === null) {
         return
@@ -225,12 +235,13 @@ function loadFolders() {
     $.ajax({
         url: '/m/' + mailbox + '/folders',
         success: function(result) {
-            folderList = jQuery.parseJSON(result);
-            for(var i = 0; i < folderList.folders.length; i++) {
-                folders.push(folderList.folders[i].name);
-                folderStat(folderList.folders[i].name);
-            }
+            var folderList = jQuery.parseJSON(result);
             $('#folders').html(folderList.html);
+            for(var i = 0; i < folderList.folders.length; i++) {
+                var folder = folderList.folders[i].name;
+                folders.push(folder);
+                updateFolderStat(folderList.stats[i])
+            }
         },
         error: function(jqXHR, textStatus, errorThrown) {
             showToast(Severity.Critical, 'Unable to update folder list: ' + errorThrown + ' ' + textStatus);
@@ -249,14 +260,8 @@ function folderStat(folder) {
             folder: folder
         },
         success: function(result) {
-            var stats = jQuery.parseJSON(result);
-            if (stats.unread > 0) {
-                $('#folderStats'+folder).text(stats.unread);
-                $('#folder'+folder).addClass('unread');
-            } else {
-                $('#folder'+folder).removeClass('unread');
-                $('#folderStats'+folder).text("");
-            }
+            var stat = jQuery.parseJSON(result);
+            updateFolderStat(stat)
         },
         error: function(jqXHR, textStatus, errorThrown) {
             showToast(Severity.Critical, 'Unable to update folder list: ' + errorThrown + ' ' + textStatus);
@@ -332,7 +337,6 @@ function setRead(mailId, read) {
                 $('#mail'+mailId).removeClass('read');
                 $('#mail'+mailId).addClass('unread');
             }
-            folderStat(currentFolder);//TODO: receive statistic from websocket
             checkMailUnread();
         },
         error: function(jqXHR, textStatus, errorThrown) {
@@ -362,8 +366,6 @@ function removeMail(mailId, callback) {
             if (callback) {
                 callback(mailId);
             }
-            folderStat(currentFolder);//TODO: receive statistic from websocket
-            folderStat('Trash');//TODO: receive statistic from websocket
         },
         error: function(jqXHR, textStatus, errorThrown) {
             showToast(Severity.Critical, 'Unable to remove mail: ' + errorThrown + ' ' + textStatus);
@@ -383,9 +385,6 @@ function restoreMail(mailId, callback) {
             }
             if (callback) {
                 callback();
-            }
-            for (var i = 0; i < folders.length; i++) {
-                folderStat(folders[i]);
             }
         },
         error: function(jqXHR, textStatus, errorThrown) {
@@ -559,22 +558,28 @@ function connectNotifier() {
         return;
     }
 
-    var protocol = 'wss://';
-    if (window.location.protocol  !== 'https:') {
-        protocol = 'ws://';
-    }
+    var protocol = window.location.protocol  !== 'https:' ? 'ws://' : 'wss://';
     notifierSocket = new WebSocket(protocol + window.location.host + '/m/' + mailbox + '/notifierSubscribe');
     notifierSocket.onmessage = function (ev) {
         jsonData = JSON.parse(ev.data);
         switch (jsonData.type) {
         case 'mail':
-            $('#mailList').prepend(jsonData.data.html);
-            for (var i = 0; i < folders.length; i++) {
-                if (folders[i] == jsonData.data.folder) {
-                    folderStat(folders[i]);
-                }
+            if (currentFolder == jsonData.data.folder) {
+                $('#mailList').prepend(jsonData.data.html);
             }
             break;
+        case 'stats':
+            for (var i = 0; i < jsonData.data.length; i++) {
+                var folder = jsonData.data[i].folder
+                var unread = jsonData.data[i].unread
+                if (unread > 0) {
+                    $('#folderStats'+folder).text(unread);
+                    $('#folder'+folder).addClass('unread');
+                } else {
+                    $('#folder'+folder).removeClass('unread');
+                    $('#folderStats'+folder).text("");
+                }
+            }
         }
     }
 }

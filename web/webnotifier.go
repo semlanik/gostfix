@@ -36,9 +36,14 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type webNotification struct {
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
+}
+
 type websocketChannel struct {
 	connection *websocket.Conn
-	channel    chan *common.MailMetadata
+	channel    chan interface{}
 }
 
 type webNotifier struct {
@@ -53,9 +58,9 @@ func NewWebNotifier() *webNotifier {
 	}
 }
 
-func (wn *webNotifier) NotifyMaiboxUpdate(email string) {
+func (wn *webNotifier) NotifyMaiboxUpdate(email string, stats []common.FolderStat) {
 	if channel, ok := wn.getNotifier(email); ok {
-		channel.channel <- &common.MailMetadata{} //TODO: Dummy notificator for now, later need to make separate interface to handle this
+		channel.channel <- stats
 	}
 }
 
@@ -82,7 +87,7 @@ func (wn *webNotifier) handleNotifierRequest(w http.ResponseWriter, r *http.Requ
 
 	c := &websocketChannel{
 		connection: conn,
-		channel:    make(chan *common.MailMetadata, 10),
+		channel:    make(chan interface{}, 10),
 	}
 	wn.addNotifier(email, c)
 
@@ -99,25 +104,36 @@ func (wn *webNotifier) handleNotifierRequest(w http.ResponseWriter, r *http.Requ
 func (wn *webNotifier) handleNotifications(c *websocketChannel) {
 	for {
 		select {
-		case newMail := <-c.channel:
-			out, err := json.Marshal(&struct {
-				Type string      `json:"type"`
-				Data interface{} `json:"data"`
-			}{
-				Type: "mail",
-				Data: &struct {
-					Folder string `json:"folder"`
-					HTML   string `json:"html"`
-				}{
-					Folder: newMail.Folder,
-					HTML:   wn.server.templater.ExecuteMailList([]*common.MailMetadata{newMail}),
-				},
-			})
+		case data := <-c.channel:
+			var err error = nil
+			var out []byte
+			if newMail, ok := data.(*common.MailMetadata); ok {
+				out, err = json.Marshal(&webNotification{
+					Type: "mail",
+					Data: &struct {
+						Folder string `json:"folder"`
+						HTML   string `json:"html"`
+					}{
+						Folder: newMail.Folder,
+						HTML:   wn.server.templater.ExecuteMailList([]*common.MailMetadata{newMail}),
+					},
+				})
 
-			err = c.connection.WriteMessage(websocket.TextMessage, out)
+			} else if stats, ok := data.([]common.FolderStat); ok {
+				out, err = json.Marshal(&webNotification{
+					Type: "stats",
+					Data: stats,
+				})
+			}
+
 			if err != nil {
-				log.Println(err.Error())
-				return
+				log.Printf("Unable to marshal notification data %v\n", err)
+			} else {
+				err = c.connection.WriteMessage(websocket.TextMessage, out)
+				if err != nil {
+					log.Println(err.Error())
+					return
+				}
 			}
 		}
 	}

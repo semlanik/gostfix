@@ -308,41 +308,12 @@ func (s *Storage) SaveMail(email, folder string, m *common.Mail, read bool) erro
 		Mail:   &mail,
 	})
 
+	stats, err := s.GetEmailStats(user.User, email, folder)
+	if err == nil {
+		s.notifyMailboxUpdate(email, []common.FolderStat{stats})
+	}
+
 	return nil
-}
-
-func (s *Storage) MoveMail(user string, mailId string, folder string) error {
-	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
-
-	oId, err := primitive.ObjectIDFromHex(mailId)
-	if err != nil {
-		return err
-	}
-
-	if folder == common.Trash {
-		_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": bson.M{"trash": true}})
-	} else {
-		_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": bson.M{"folder": folder, "trash": false}})
-	}
-	return err
-}
-
-func (s *Storage) RestoreMail(user string, mailId string) error {
-	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
-
-	oId, err := primitive.ObjectIDFromHex(mailId)
-	if err != nil {
-		return err
-	}
-
-	//TODO: Legacy for old databases remove soon
-	metadata, err := s.GetMail(user, mailId)
-	if metadata.Folder == common.Trash {
-		_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": bson.M{"folder": common.Inbox}})
-	}
-
-	_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": bson.M{"trash": false}})
-	return err
 }
 
 func (s *Storage) DeleteMail(user string, mailId string) error {
@@ -364,6 +335,12 @@ func (s *Storage) DeleteMail(user string, mailId string) error {
 	}
 
 	_, err = mailsCollection.DeleteOne(context.Background(), bson.M{"_id": oId})
+
+	stats, errTemp := s.GetEmailStats(user, result.Email, common.Trash)
+	if errTemp == nil {
+		s.notifyMailboxUpdate(result.Email, []common.FolderStat{stats})
+	}
+
 	return err
 }
 
@@ -428,12 +405,12 @@ func (s *Storage) GetUserInfo(user string) (*common.UserInfo, error) {
 	return result, err
 }
 
-func (s *Storage) GetEmailStats(user string, email string, folder string) (unread, total int, err error) {
+func (s *Storage) GetEmailStats(user string, email string, folder string) (stat common.FolderStat, err error) {
+	stat = common.FolderStat{
+		Folder: folder,
+	}
+
 	mailsCollection := s.db.Collection(qualifiedMailCollection(user))
-	result := &struct {
-		Total  int
-		Unread int
-	}{}
 
 	matchFilter := bson.M{"email": email}
 	if folder == common.Trash {
@@ -449,24 +426,22 @@ func (s *Storage) GetEmailStats(user string, email string, folder string) (unrea
 		}
 	}
 
-	unreadMatchFilter := matchFilter
-	unreadMatchFilter["read"] = false
-
-	cur, err := mailsCollection.Aggregate(context.Background(), bson.A{bson.M{"$match": unreadMatchFilter}, bson.M{"$count": "unread"}})
+	cur, err := mailsCollection.Aggregate(context.Background(), bson.A{bson.M{"$match": matchFilter}, bson.M{"$count": "total"}})
 	if err == nil && cur.Next(context.Background()) {
-		cur.Decode(result)
+		cur.Decode(&stat)
 	} else {
-		return 0, 0, err
+		return
 	}
 
-	cur, err = mailsCollection.Aggregate(context.Background(), bson.A{bson.M{"$match": matchFilter}, bson.M{"$count": "total"}})
-	if err == nil && cur.Next(context.Background()) {
-		cur.Decode(result)
-	} else {
-		return 0, 0, err
-	}
+	matchFilter["read"] = false
 
-	return result.Unread, result.Total, err
+	cur, err = mailsCollection.Aggregate(context.Background(), bson.A{bson.M{"$match": matchFilter}, bson.M{"$count": "unread"}})
+	if err == nil && cur.Next(context.Background()) {
+		cur.Decode(&stat)
+	} else {
+		return
+	}
+	return
 }
 
 func (s *Storage) GetMail(user string, id string) (metadata *common.MailMetadata, err error) {
@@ -496,6 +471,9 @@ func (s *Storage) SetRead(user string, id string, read bool) error {
 		return err
 	}
 	_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": bson.M{"read": read}})
+
+	s.notifyMailboxUpdateForMail(user, id)
+
 	return err
 }
 
@@ -506,7 +484,23 @@ func (s *Storage) UpdateMail(user string, id string, mailMap interface{}) error 
 	if err != nil {
 		return err
 	}
+
+	fromFolder := ""
+	metadata, err := s.GetMail(user, id)
+	if err == nil {
+		if metadata.Trash {
+			fromFolder = common.Trash
+		} else {
+			fromFolder = metadata.Folder
+		}
+	} else {
+		log.Printf("Unable to get mail info to update folder statistics %s", err)
+	}
+
 	_, err = mailsCollection.UpdateOne(context.Background(), bson.M{"_id": oId}, bson.M{"$set": mailMap})
+
+	s.notifyMailboxUpdateForMail(user, id, fromFolder)
+
 	return err
 }
 
@@ -546,10 +540,10 @@ func (s *Storage) CheckEmailExists(email string) bool {
 
 func (s *Storage) GetFolders(email string) (folders []*common.Folder) {
 	folders = []*common.Folder{
-		&common.Folder{Name: common.Inbox, Custom: false},
-		&common.Folder{Name: common.Sent, Custom: false},
-		&common.Folder{Name: common.Trash, Custom: false},
-		&common.Folder{Name: common.Spam, Custom: false},
+		{Name: common.Inbox, Custom: false},
+		{Name: common.Sent, Custom: false},
+		{Name: common.Trash, Custom: false},
+		{Name: common.Spam, Custom: false},
 	}
 	return
 }
@@ -669,10 +663,40 @@ func (s *Storage) notifyNewMail(email string, mail common.MailMetadata) {
 	}
 }
 
-func (s *Storage) notifyMailboxUpdate(email string) {
+func (s *Storage) notifyMailboxUpdate(email string, stats []common.FolderStat) {
 	notifiers.notifiersLock.Lock()
 	defer notifiers.notifiersLock.Unlock()
 	for _, notifier := range notifiers.notifiers {
-		notifier.NotifyMaiboxUpdate(email)
+		notifier.NotifyMaiboxUpdate(email, stats)
 	}
+}
+
+func (s *Storage) notifyMailboxUpdateForMail(user, id string, folders ...string) {
+	metadata, err := s.GetMail(user, id)
+
+	if err != nil {
+		log.Printf("Unable to get mail metadata to update mailbox stat %v\n", err)
+		return
+	}
+
+	if metadata.Trash {
+		folders = append(folders, common.Trash)
+	}
+
+	var stats []common.FolderStat
+	stat, err := s.GetEmailStats(user, metadata.Email, metadata.Folder)
+	stats = append(stats, stat)
+	for _, folder := range folders {
+		if folder == metadata.Folder {
+			continue
+		}
+
+		stat, err = s.GetEmailStats(user, metadata.Email, folder)
+		if err == nil {
+			stats = append(stats, stat)
+		} else {
+			log.Printf("Unable to update mailbox stat %v\n", err)
+		}
+	}
+	s.notifyMailboxUpdate(metadata.Email, stats)
 }

@@ -47,3 +47,9 @@ message Folder {
 	string name = 1;
 	bool custom = 2;
 }
+
+message FolderStat {
+	string folder = 1;
+	uint32 total = 2;
+	uint32 unread = 3;
+}

@@ -109,12 +109,20 @@ func (s *Server) handleMailboxRequest(w http.ResponseWriter, r *http.Request, us
 func (s *Server) handleFolders(w http.ResponseWriter, user, email string) {
 	folders := s.storage.GetFolders(email)
 
+	var stats []interface{}
+	for _, folder := range folders {
+		stat, _ := s.storage.GetEmailStats(user, email, folder.Name)
+		stats = append(stats, stat)
+	}
+
 	out, err := json.Marshal(&struct {
 		Folders []*common.Folder `json:"folders"`
 		Html    string           `json:"html"`
+		Stats   []interface{}    `json:"stats"`
 	}{
 		Folders: folders,
 		Html:    s.templater.ExecuteFolders(s.storage.GetFolders(email)),
+		Stats:   stats,
 	})
 
 	if err != nil {
@@ -125,19 +133,13 @@ func (s *Server) handleFolders(w http.ResponseWriter, user, email string) {
 }
 
 func (s *Server) handleFolderStat(w http.ResponseWriter, r *http.Request, user, email string) {
-	unread, total, err := s.storage.GetEmailStats(user, email, s.extractFolder(email, r))
+	stat, err := s.storage.GetEmailStats(user, email, s.extractFolder(email, r))
 	if err != nil {
 		s.error(http.StatusInternalServerError, "Couldn't read mailbox stat", w)
 		return
 	}
 
-	out, err := json.Marshal(&struct {
-		Total  int `json:"total"`
-		Unread int `json:"unread"`
-	}{
-		Total:  total,
-		Unread: unread,
-	})
+	out, err := json.Marshal(stat)
 
 	if err != nil {
 		s.error(http.StatusInternalServerError, "Couldn't parse mailbox stat", w)
@@ -155,7 +157,7 @@ func (s *Server) handleMailList(w http.ResponseWriter, r *http.Request, user, em
 		page = 0
 	}
 
-	_, total, err := s.storage.GetEmailStats(user, email, folder)
+	stat, err := s.storage.GetEmailStats(user, email, folder)
 	if err != nil {
 		s.error(http.StatusInternalServerError, "Couldn't read email database", w)
 		return
@@ -169,10 +171,10 @@ func (s *Server) handleMailList(w http.ResponseWriter, r *http.Request, user, em
 	}
 
 	out, err := json.Marshal(&struct {
-		Total int    `json:"total"`
+		Total uint32 `json:"total"`
 		Html  string `json:"html"`
 	}{
-		Total: total,
+		Total: stat.Total,
 		Html:  s.templater.ExecuteMailList(mailList),
 	})
 	if err != nil {
