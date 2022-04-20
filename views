@@ -1,1 +1,1 @@
-db.createView("allEmails", "emails", [{$unwind:"$email"},{$group: {_id: null, emails: {$addToSet: "$email"}}}]
+db.createView("allEmails", "emails", [{$unwind:"$email"},{$group: {_id: null, emails: {$addToSet: "$email"}}}])

@@ -122,10 +122,11 @@ func newConfig() (config *gostfixConfig, err error) {
 		return
 	}
 
-	if !utils.FileExists(mapsList[1] + ".db") {
-		log.Fatalf("Virtual mailbox map %s doesn't exist, postfix is not configured proper way, check %s in %s\n", mapsList[1], PostfixKeyVirtualMailboxMaps, postfixConfigPath)
-		return
-	}
+	// TODO: Trigger initial setup cycle instead of throwing an error
+	// if !utils.FileExists(mapsList[1] + ".db") {
+	// 	log.Fatalf("Virtual mailbox map %s doesn't exist, postfix is not configured proper way, check %s in %s\n", mapsList[1], PostfixKeyVirtualMailboxMaps, postfixConfigPath)
+	// 	return
+	// }
 
 	domains := postfixCfg.Section("").Key(PostfixKeyVirtualMailboxDomains).String()
 	domainsList := strings.Split(domains, " ")

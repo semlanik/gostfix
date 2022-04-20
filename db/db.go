@@ -106,6 +106,30 @@ func NewStorage() (s *Storage, err error) {
 		Options: options.Index().SetUnique(true),
 	}
 
+	collections, err := db.ListCollectionNames(context.Background(), bson.D{})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	createAllEmails := true
+	for _, collection := range collections {
+		if collection == "allEmails" {
+			createAllEmails = false
+		}
+		log.Println(collection)
+	}
+
+	if createAllEmails {
+		unwindStage := bson.D{{"$unwind", bson.D{{"path", "$email"}}}}
+		groupStage := bson.D{{"$group", bson.D{{"_id", "null"}, {"emails", bson.D{{"$addToSet", "$email"}}}}}}
+		pipeline := mongo.Pipeline{unwindStage, groupStage}
+		err = db.CreateView(context.Background(), "allEmails", "emails", pipeline)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	s = &Storage{
 		db:                  db,
 		usersCollection:     db.Collection("users"),
@@ -557,16 +581,18 @@ func (s *Storage) ReadEmailMaps() (map[string]string, error) {
 	mailPath := config.ConfigInstance().VMailboxBase
 
 	mapsFile := config.ConfigInstance().VMailboxMaps
-	if !utils.FileExists(mapsFile) {
-		return nil, errors.New("Could not read virtual mailbox maps")
-	}
 
 	db, err := berkeleydb.NewDB()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = db.Open(config.ConfigInstance().VMailboxMaps, berkeleydb.DbHash, berkeleydb.DbRdOnly)
+	if !utils.FileExists(config.ConfigInstance().VMailboxMaps) {
+		err = db.Open(config.ConfigInstance().VMailboxMaps, berkeleydb.DbHash, berkeleydb.DbCreate)
+	} else {
+		err = db.Open(config.ConfigInstance().VMailboxMaps, berkeleydb.DbHash, berkeleydb.DbRdOnly)
+	}
+
 	if err != nil {
 		return nil, errors.New("Unable to open virtual mailbox maps " + mapsFile + " " + err.Error())
 	}
