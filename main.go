@@ -31,7 +31,7 @@ import (
 	sasl "git.semlanik.org/semlanik/gostfix/sasl"
 	scanner "git.semlanik.org/semlanik/gostfix/scanner"
 	web "git.semlanik.org/semlanik/gostfix/web"
-	profile "github.com/pkg/profile"
+	"github.com/pkg/profile"
 )
 
 type GofixEngine struct {
