@@ -13,10 +13,10 @@ protoc -I$RPC_PATH --go_out=plugins=grpc:$PWD $RPC_PATH/gostfix.proto
 protoc -I$RPC_PATH --gotag_out=xxx="bson+\"-\"",output_path=$RPC_PATH:. $RPC_PATH/gostfix.proto
 
 #echo "Installing data"
-rm -rf data
-mkdir data
-cp -a main.ini data/
-cp -a main.cf data/
+#rm -rf data
+#mkdir data
+#cp -a main.ini data/
+#cp -a main.cf data/
 #cp -a vmailbox.db data/
 cp -a web/assets data/
 cp -a web/css data/

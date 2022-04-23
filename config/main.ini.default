@@ -1,28 +1,50 @@
-# Port used by web interface server
-web_port = 65200
+; Web server port
+; Default: 65200
+;
+web_port=65200
 
-# Port used by SASL authentication server
-sasl_port = 65201
+; SASL authentication server port
+; Default: 65201
+;
+sasl_port=65201
 
-# Path to postfix service configuration.
-# Usualy placed in /etc/postfix/main.cf
-# If not set cause critical error.
+; Enables or disable registration functionality in web interface
+;
+registration_enabled=true
+
+; Path to postfix service configuration.
+; Usualy is located in /etc/postfix/main.cf
+; If not set cause critical error.
+;
 postfix_config = /etc/postfix/main.cf
 
-# Address of mongo database to store service data in following
-# format:
-#     host:[port]
-# By default is localhost:27017.
-mongo_address = localhost:27017
+; Address of mongo database to store service data in following
+; format:
+;     host:[port]
+; Default: localhost:27017
+;
+;mongo_address = localhost:27017
 
-# User name to access mongo database. Empty by default.
+; User name to access mongo database. Empty by default.
+;
 mongo_user =
 
-# Password to access mongo database. Empty by default.
+; Password to access mongo database. Empty by default.
+;
 mongo_password =
 
-# Path to attachments storage. By dafault "./attachments".
+; Path to attachments storage. By dafault "./attachments".
+;
 attachments_path = attachments
 
-# Enables registration functionality, disabled by default
+; Enables registration functionality, disabled by default
+;
 registration_enabled = false
+
+[web]
+; Duration while the user web session is valid. If user tryes to access the web
+; interface after the session is expired, a token that is used to access the web
+; interface is invalidated and removed from database.
+; Default: 24h
+;
+;session_expire_time=1m

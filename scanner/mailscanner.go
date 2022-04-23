@@ -49,15 +49,12 @@ type MailScanner struct {
 }
 
 func NewMailScanner() (ms *MailScanner) {
-	log.Print("test2")
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
-	log.Print("test2")
 	storage, err := db.NewStorage()
-	log.Print("test3")
 	if err != nil {
 		log.Fatal(err)
 		return

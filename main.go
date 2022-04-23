@@ -43,12 +43,13 @@ type GofixEngine struct {
 func NewGofixEngine() (e *GofixEngine) {
 	mailScanner := scanner.NewMailScanner()
 	saslService, err := sasl.NewSaslServer()
+	webServer := web.NewServer(mailScanner)
 	if err != nil {
 		log.Fatalf("Unable to intialize sasl server %s\n", err)
 	}
 	e = &GofixEngine{
 		scanner: mailScanner,
-		web:     web.NewServer(mailScanner),
+		web:     webServer,
 		sasl:    saslService,
 	}
 	return

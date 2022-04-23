@@ -29,6 +29,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"time"
 
 	utils "git.semlanik.org/semlanik/gostfix/utils"
 	ini "gopkg.in/go-ini/ini.v1"
@@ -37,16 +38,27 @@ import (
 const configPath = "data/main.ini"
 
 const (
-	KeyWebPort             = "web_port"
-	KeySASLPort            = "sasl_port"
-	KeyPostfixConfig       = "postfix_config"
-	KeyMongoAddress        = "mongo_address"
-	KeyMongoUser           = "mongo_user"
-	KeyMongoPassword       = "mongo_password"
-	KeyAttachmentsPath     = "attachments_path"
-	KeyAttachmentsUser     = "attachments_user"
-	KeyAttachmentsPassword = "attachments_password"
-	KeyRegistrationEnabled = "registration_enabled"
+	KeyWebPort              = "web_port"
+	KeySASLPort             = "sasl_port"
+	KeyPostfixConfig        = "postfix_config"
+	KeyMongoAddress         = "mongo_address"
+	KeyMongoUser            = "mongo_user"
+	KeyMongoPassword        = "mongo_password"
+	KeyAttachmentsPath      = "attachments_path"
+	KeyAttachmentsUser      = "attachments_user"
+	KeyAttachmentsPassword  = "attachments_password"
+	KeyRegistrationEnabled  = "registration_enabled"
+)
+
+const (
+	SetupSection            = "intial_setup"
+	SetupKeyEnabled         = "enabled"
+	SetupKeyPassword        = "password"
+)
+
+const (
+	WebSection              = "web"
+	WebKeySessionExpireTime = "session_expire_time"
 )
 
 const (
@@ -73,25 +85,42 @@ func ConfigInstance() *GostfixConfig {
 }
 
 type gostfixConfig struct {
-	WebPort             string
-	SASLPort            string
-	MyDomain            string
-	VMailboxMaps        string
-	VMailboxBase        string
-	VMailboxDomains     []string
-	MongoUser           string
-	MongoPassword       string
-	MongoAddress        string
-	AttachmentsPath     string
-	RegistrationEnabled bool
+	WebPort              string
+	SASLPort             string
+	MyDomain             string
+	VMailboxMaps         string
+	VMailboxBase         string
+	VMailboxDomains      []string
+	MongoUser            string
+	MongoPassword        string
+	MongoAddress         string
+	AttachmentsPath      string
+	RegistrationEnabled  bool
+	WebSessionExpireTime time.Duration
+	SetupEnabled         bool
+	SetupPassword        string
 }
 
 func newConfig() (config *gostfixConfig, err error) {
-
 	cfg, err := ini.Load(configPath)
 	if err != nil {
 		log.Fatalf("Unable to load %s\n", configPath)
 		return
+	}
+
+	webPort := cfg.Section("").Key(KeyWebPort).String()
+	if webPort == "" {
+		log.Printf("Web server port is not specified in configuration file, use default 65200")
+		webPort = "65200"
+	}
+	
+	initialSetup, _ := cfg.Section(SetupSection).Key(SetupKeyEnabled).Bool()
+	initialPassword := cfg.Section(SetupSection).Key(SetupKeyPassword).String()
+	if initialSetup {
+		if len(initialPassword) < 8 {
+			log.Fatalf("Initial setup requires a temporary master password in the configuration file. The minimum lenght is 8 symbols.")
+			return
+		}
 	}
 
 	postfixConfigPath := cfg.Section("").Key(KeyPostfixConfig).String()
@@ -122,11 +151,10 @@ func newConfig() (config *gostfixConfig, err error) {
 		return
 	}
 
-	// TODO: Trigger initial setup cycle instead of throwing an error
-	// if !utils.FileExists(mapsList[1] + ".db") {
-	// 	log.Fatalf("Virtual mailbox map %s doesn't exist, postfix is not configured proper way, check %s in %s\n", mapsList[1], PostfixKeyVirtualMailboxMaps, postfixConfigPath)
-	// 	return
-	// }
+	if !utils.FileExists(mapsList[1] + ".db") {
+		log.Fatalf("Virtual mailbox map %s doesn't exist, postfix is not configured proper way, check %s in %s\n", mapsList[1], PostfixKeyVirtualMailboxMaps, postfixConfigPath)
+		return
+	}
 
 	domains := postfixCfg.Section("").Key(PostfixKeyVirtualMailboxDomains).String()
 	domainsList := strings.Split(domains, " ")
@@ -166,30 +194,33 @@ func newConfig() (config *gostfixConfig, err error) {
 
 	registrationEnabled := cfg.Section("").Key(KeyRegistrationEnabled).String()
 
-	webPort := cfg.Section("").Key(KeyWebPort).String()
-	if webPort == "" {
-		log.Printf("Web server port is not specified in configuration file, use default 65200")
-		webPort = "65200"
-	}
-
 	saslPort := cfg.Section("").Key(KeySASLPort).String()
 	if saslPort == "" {
 		log.Printf("SASL server port is not specified in configuration file, use default 65201")
 		saslPort = "65201"
 	}
 
+	webSessionExpireTime, err := time.ParseDuration(cfg.Section(WebSection).Key(WebKeySessionExpireTime).String())
+	if err != nil {
+		webSessionExpireTime = time.Hour * 24
+		log.Printf("Unable to read web session expire time. 24h by default.");
+	}
+
 	config = &gostfixConfig{
-		WebPort:             webPort,
-		SASLPort:            saslPort,
-		MyDomain:            myDomain,
-		VMailboxBase:        baseDir,
-		VMailboxMaps:        mapsList[1] + ".db",
-		VMailboxDomains:     validDomains,
-		MongoUser:           mongoUser,
-		MongoPassword:       mongoPassword,
-		MongoAddress:        mongoAddress,
-		AttachmentsPath:     attachmentsPath,
-		RegistrationEnabled: registrationEnabled == "true",
+		WebPort:              webPort,
+		SASLPort:             saslPort,
+		MyDomain:             myDomain,
+		VMailboxBase:         baseDir,
+		VMailboxMaps:         mapsList[1] + ".db",
+		VMailboxDomains:      validDomains,
+		MongoUser:            mongoUser,
+		MongoPassword:        mongoPassword,
+		MongoAddress:         mongoAddress,
+		AttachmentsPath:      attachmentsPath,
+		RegistrationEnabled:  registrationEnabled == "true",
+		WebSessionExpireTime: webSessionExpireTime * 1000,
+		SetupEnabled:         initialSetup,
+		SetupPassword:        initialPassword,
 	}
 	return
 }

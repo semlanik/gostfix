@@ -37,10 +37,6 @@ import (
 )
 
 func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
-	// if session, err := s.sessionStore.Get(r, CookieSessionToken); err == nil && session.Values["user"] != nil && session.Values["token"] != nil {
-	// 	http.Redirect(w, r, "/m0", http.StatusTemporaryRedirect)
-	// 	return
-	// }
 	if !config.ConfigInstance().RegistrationEnabled {
 		s.error(http.StatusNotImplemented, "Registration is disabled on this server", w)
 		return
@@ -92,20 +88,6 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/m/0", http.StatusTemporaryRedirect)
 			return
 		}
-
-		var signupTemplate template.HTML
-		if config.ConfigInstance().RegistrationEnabled {
-			signupTemplate = template.HTML(s.templater.ExecuteSignup(""))
-		} else {
-			signupTemplate = ""
-		}
-
-		//Otherwise make sure user logged out and show login page
-		s.logout(w, r)
-		fmt.Fprint(w, s.templater.ExecuteLogin(&struct {
-			Version string
-			Signup  template.HTML
-		}{common.Version, signupTemplate}))
 	case "POST":
 		//Check passed in form login/password pair first
 		user := r.FormValue("user")
@@ -116,6 +98,20 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	var signupTemplate template.HTML
+	if config.ConfigInstance().RegistrationEnabled {
+		signupTemplate = template.HTML(s.templater.ExecuteSignup(""))
+	} else {
+		signupTemplate = ""
+	}
+
+	//Otherwise make sure user logged out and show login page
+	s.logout(w, r)
+	fmt.Fprint(w, s.templater.ExecuteLogin(&struct {
+		Version string
+		Signup  template.HTML
+	}{common.Version, signupTemplate}))
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {

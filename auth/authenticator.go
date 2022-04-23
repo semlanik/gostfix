@@ -210,28 +210,30 @@ func (a *Authenticator) checkToken(user, token string) error {
 				Expire int64
 			}
 		}{}
-
+		
 		err = cur.Decode(&result)
-
-		ok = err == nil && result.Token.Expire >= time.Now().Unix()
+		
+		ok = err == nil && (config.ConfigInstance().WebSessionExpireTime <= 0 || result.Token.Expire >= time.Now().Unix())
 	}
 
 	if ok {
-		opts := options.Update().SetArrayFilters(options.ArrayFilters{
-			Registry: bson.DefaultRegistry,
-			Filters: bson.A{
-				bson.M{"element.token": "b3a612c1-a56c-4465-8071-4250ec5de79d"},
-			}})
-		a.tokensCollection.UpdateOne(context.Background(),
-			bson.M{
-				"user": user,
-			},
-			bson.M{
-				"$set": bson.M{
-					"token.$[element].expire": time.Now().Add(time.Hour * 24).Unix(),
+		if config.ConfigInstance().WebSessionExpireTime > 0 {
+			opts := options.Update().SetArrayFilters(options.ArrayFilters{
+				Registry: bson.DefaultRegistry,
+				Filters: bson.A{
+					bson.M{"element.token": token},
+				}})
+			a.tokensCollection.UpdateOne(context.Background(),
+				bson.M{
+					"user": user,
 				},
-			},
-			opts)
+				bson.M{
+					"$set": bson.M{
+						"token.$[element].expire": time.Now().Add(config.ConfigInstance().WebSessionExpireTime).Unix(),
+					},
+				},
+				opts)
+		}
 		return nil
 	}
 
