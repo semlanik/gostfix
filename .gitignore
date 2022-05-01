@@ -25,5 +25,7 @@ _testmain.go
 *.prof
 
 data/
+bin/
 
 common/gostfix.pb.go
+service/service.pb.go

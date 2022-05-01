@@ -39,6 +39,7 @@ import (
 
 const (
 	SignalReconfigure = iota
+	SignalStop
 )
 
 type MailScanner struct {
@@ -98,6 +99,7 @@ func (ms *MailScanner) checkEmailRegistred(email string) bool {
 }
 
 func (ms *MailScanner) reconfigure() {
+	log.Printf("Reconfiguring mail scanner")
 	var err error
 	ms.emailMaps, err = ms.storage.ReadEmailMaps()
 	if err != nil {
@@ -129,55 +131,11 @@ func (ms *MailScanner) reconfigure() {
 	}
 }
 
-func (ms *MailScanner) Run() {
-	go func() {
+func (ms *MailScanner) handleSignal(signal int) {
+	switch signal {
+	case SignalReconfigure:
 		ms.reconfigure()
-
-		for {
-			select {
-			case signal := <-ms.signalChannel:
-				switch signal {
-				case SignalReconfigure:
-					ms.reconfigure()
-				}
-			case event, ok := <-ms.watcher.Events:
-				if !ok {
-					return
-				}
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					log.Println("iNotify write")
-
-					mailPath := event.Name
-					mailbox := ""
-					for k, v := range ms.emailMaps {
-						if v == mailPath {
-							mailbox = k
-						}
-					}
-
-					if mailbox != "" {
-						mails := ms.readMailFile(mailPath)
-						for _, mail := range mails {
-							ms.storage.SaveMail(mailbox, common.Inbox, mail, false)
-						}
-						log.Printf("New email for %s, emails read %d", mailPath, len(mails))
-					} else {
-						log.Printf("Invalid path update triggered: %s", mailPath)
-					}
-
-				}
-			case err, ok := <-ms.watcher.Errors:
-				if !ok {
-					return
-				}
-				log.Println("error:", err)
-			}
-		}
-	}()
-}
-
-func (ms *MailScanner) Stop() {
-	defer ms.watcher.Close()
+	}
 }
 
 func (ms *MailScanner) readMailFile(mailPath string) (mails []*common.Mail) {

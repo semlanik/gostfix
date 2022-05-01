@@ -18,8 +18,8 @@ message MailHeader {
 }
 
 message Mail {
-    MailHeader header = 1;
-    MailBody body = 2;
+	MailHeader header = 1;
+	MailBody body = 2;
 }
 
 message Attachment {

@@ -46,8 +46,6 @@ type Authenticator struct {
 	tokensCollection *mongo.Collection
 }
 
-type Privileges int
-
 const (
 	AdminPrivilege = 1 << iota
 	SendMailPrivilege
@@ -105,7 +103,7 @@ func (a *Authenticator) CheckUser(user, password string) error {
 }
 
 func (a *Authenticator) addToken(user, token string) error {
-	log.Printf("Add token: %s\n", user)
+	log.Printf("Add token: %s", user)
 	a.tokensCollection.UpdateOne(context.Background(),
 		bson.M{"user": user},
 		bson.M{
@@ -122,7 +120,11 @@ func (a *Authenticator) addToken(user, token string) error {
 }
 
 func (a *Authenticator) cleanupTokens(user string) {
-	log.Printf("Cleanup tokens: %s\n", user)
+	if len(user) == 0 {
+		return
+	}
+
+	log.Printf("Cleanup tokens: %s", user)
 
 	cur, err := a.tokensCollection.Aggregate(context.Background(),
 		bson.A{
@@ -210,9 +212,9 @@ func (a *Authenticator) checkToken(user, token string) error {
 				Expire int64
 			}
 		}{}
-		
+
 		err = cur.Decode(&result)
-		
+
 		ok = err == nil && (config.ConfigInstance().WebSessionExpireTime <= 0 || result.Token.Expire >= time.Now().Unix())
 	}
 
@@ -223,7 +225,7 @@ func (a *Authenticator) checkToken(user, token string) error {
 				Filters: bson.A{
 					bson.M{"element.token": token},
 				}})
-			a.tokensCollection.UpdateOne(context.Background(),
+			_, err = a.tokensCollection.UpdateOne(context.Background(),
 				bson.M{
 					"user": user,
 				},
@@ -233,6 +235,9 @@ func (a *Authenticator) checkToken(user, token string) error {
 					},
 				},
 				opts)
+			if err != nil {
+				log.Printf("Unable to update token expiration time for user %s", user)
+			}
 		}
 		return nil
 	}
@@ -248,6 +253,15 @@ func (a *Authenticator) Verify(user, token string) bool {
 	return a.checkToken(user, token) == nil
 }
 
-func (a *Authenticator) CheckPrivileges(user string, privilege Privileges) {
-
+func (a *Authenticator) CheckPrivileges(user string, privilege int) (error, bool) {
+	// TODO: check if privelege is a signle value but not bitmask already
+	log.Printf("Check privileges %d for user %s", privilege, user)
+	result := struct {
+		Privileges int
+	}{}
+	err := a.usersCollection.FindOne(context.Background(), bson.M{"user": user}).Decode(&result)
+	if err != nil {
+		return errors.New("Invalid user"), false
+	}
+	return nil, result.Privileges&privilege != 0
 }

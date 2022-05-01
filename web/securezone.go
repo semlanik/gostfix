@@ -30,6 +30,7 @@ import (
 	"log"
 	"net/http"
 
+	"git.semlanik.org/semlanik/gostfix/auth"
 	"git.semlanik.org/semlanik/gostfix/common"
 )
 
@@ -37,6 +38,15 @@ func (s *Server) handleSecureZone(w http.ResponseWriter, r *http.Request, user s
 	if user == "" {
 		log.Printf("User could not be empty. Invalid usage of handleMailRequest")
 		panic(nil)
+	}
+
+	err, ok := s.authenticator.CheckPrivileges(user, auth.AdminPrivilege)
+	if err != nil {
+		log.Printf("Unable to fetch priveleges %s for user %s", err, user)
+	}
+
+	if !ok {
+		s.error(http.StatusUnauthorized, "Administrator permissions required", w)
 	}
 	s.error(http.StatusNotImplemented, "Admin panel is not implemented", w)
 }

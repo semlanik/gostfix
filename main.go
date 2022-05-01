@@ -27,43 +27,80 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	sasl "git.semlanik.org/semlanik/gostfix/sasl"
 	scanner "git.semlanik.org/semlanik/gostfix/scanner"
+	service "git.semlanik.org/semlanik/gostfix/service"
 	web "git.semlanik.org/semlanik/gostfix/web"
 	"github.com/pkg/profile"
 )
 
-type GofixEngine struct {
-	scanner *scanner.MailScanner
-	web     *web.Server
-	sasl    *sasl.SaslServer
+type GostfixEngine struct {
+	services []service.NanoService
+	stats    []*service.NanoServiceStats
 }
 
-func NewGofixEngine() (e *GofixEngine) {
+func NewGostfixEngine() (e *GostfixEngine) {
 	mailScanner := scanner.NewMailScanner()
 	saslService, err := sasl.NewSaslServer()
-	webServer := web.NewServer(mailScanner)
 	if err != nil {
 		log.Fatalf("Unable to intialize sasl server %s\n", err)
 	}
-	e = &GofixEngine{
-		scanner: mailScanner,
-		web:     webServer,
-		sasl:    saslService,
-	}
+
+	webServer := web.NewServer(mailScanner, e)
+
+	e = &GostfixEngine{}
+	e.services = append(e.services, saslService, mailScanner, webServer)
+	e.stats = make([]*service.NanoServiceStats, len(e.services))
 	return
 }
 
-func (e *GofixEngine) Run() {
-	defer e.scanner.Stop()
-	e.sasl.Run()
-	e.scanner.Run()
-	e.web.Run()
+func (e *GostfixEngine) Run() {
+	for i, s := range e.services {
+		if e.stats[i] == nil {
+			e.stats[i] = &service.NanoServiceStats{}
+		}
+		go func(s service.NanoService, stats *service.NanoServiceStats) {
+			stats.Name = s.ServiceName()
+			stats.Status = service.NanoServiceStatus_NanoServiceRunning
+			log.Printf("Running %s", s.ServiceName())
+			s.Run()
+			stats.Status = service.NanoServiceStatus_NanoServiceStopped
+			log.Printf("%s is stopped", s.ServiceName())
+		}(s, e.stats[i])
+	}
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	done := make(chan bool, 1)
+	go func() {
+		sig := <-sigs
+		log.Printf("Exit by signal %v", sig)
+		done <- true
+	}()
+
+	log.Printf("Server is running succesfully")
+	<-done
+
+	log.Printf("Server is stopping")
+	for i, s := range e.services {
+		if e.stats[i] != nil && e.stats[i].Status == service.NanoServiceStatus_NanoServiceRunning {
+			e.stats[i] = &service.NanoServiceStats{}
+			s.Stop()
+		}
+	}
+	log.Printf("Server shutdown")
+}
+
+func (e *GostfixEngine) ReadStats() []*service.NanoServiceStats {
+	return e.stats
 }
 
 func main() {
 	defer profile.Start().Stop()
-	engine := NewGofixEngine()
+	engine := NewGostfixEngine()
 	engine.Run()
 }

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <link rel="icon" href="/assets/logo.png">
+        <link href="https://fonts.googleapis.com/css?family=Titillium+Web&display=swap" rel="stylesheet">
+        <link type="text/css" href="/css/index.css" rel="stylesheet">
+        <link type="text/css" href="/css/styles.css" rel="stylesheet">
+        <link type="text/css" href="/css/controls.css" rel="stylesheet">
+        <script src="/js/jquery-3.4.1.min.js"></script>
+        <script src="/js/forms.js"></script>
+        <script src="/js/notifications.js"></script>
+        <script src="/js/admin.js"></script>
+        <script>
+             $(document).ready(function() {
+                 updateServiceStats()
+             }
+        </script>
+        <title>Gostfix mail {{.Version}}</title>
+    </head>
+    <body>
+        <div id="main">
+            <div class="horizontalPaddingBox">
+                <div class="contentBox">
+                    <div class="leftPanel">
+                        <div class="folderBtn" onclick="back();">Back</div>
+                        <div class="folderBtn">Service list</div>
+                    </div>
+                    <div class="verticalPaddingBox">
+                        <div class="innerConentBox materialLevel1">
+                            <div id="adminContent" style="flex: 1 1 auto; display: flex; flex-direction: column;">
+                                <div class="serviceListHeader">
+                                    Service list
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="copyrightBox" class="elidedText"><img src="/assets/logo.svg" height="30px"/><a href="https://github.com/semlanik/gostfix" target="_blank">gostfix</a>&nbsp;{{.Version}} Web interface. Copyright (c) 2020 Alexey Edelev &lt;semlanik@gmail.com&gt;</div>
+        </div>
+    </body>
+</html>

@@ -4,7 +4,6 @@ go 1.14
 
 require (
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/sessions v1.2.0
 	github.com/gorilla/websocket v1.4.2
@@ -19,7 +18,7 @@ require (
 	golang.org/x/net v0.0.0-20220421235706-1d1ef9303861 // indirect
 	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
+	google.golang.org/protobuf v1.28.0
 	gopkg.in/go-ini/ini.v1 v1.57.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )

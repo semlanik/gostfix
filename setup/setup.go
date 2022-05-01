@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2020 Alexey Edelev <semlanik@gmail.com>
+ * Copyright (c) 2022 Alexey Edelev <semlanik@gmail.com>
  *
  * This file is part of gostfix project https://git.semlanik.org/semlanik/gostfix
  *

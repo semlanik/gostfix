@@ -41,7 +41,6 @@ import (
 	"time"
 
 	"git.semlanik.org/semlanik/gostfix/auth"
-	"git.semlanik.org/semlanik/gostfix/config"
 	"github.com/google/uuid"
 )
 
@@ -49,6 +48,7 @@ type SaslServer struct {
 	pid           int
 	cuid          int
 	authenticator *auth.Authenticator
+	listener      net.Listener
 }
 
 const (
@@ -80,29 +80,6 @@ func NewSaslServer() (*SaslServer, error) {
 		cuid:          0,
 		authenticator: authenticator,
 	}, nil
-}
-
-func (s *SaslServer) Run() {
-	go func() {
-		l, err := net.Listen("tcp", "127.0.0.1:"+config.ConfigInstance().SASLPort)
-		if err != nil {
-			log.Fatalf("Coulf not start SASL server: %s\n", err)
-			return
-		}
-		defer l.Close()
-
-		log.Printf("Listen sasl on: %s\n", l.Addr().String())
-
-		for {
-			conn, err := l.Accept()
-			s.cuid++
-			if err != nil {
-				log.Println("Error accepting: ", err.Error())
-				continue
-			}
-			go s.handleRequest(conn)
-		}
-	}()
 }
 
 func (s *SaslServer) handleRequest(conn net.Conn) {

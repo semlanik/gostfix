@@ -35,6 +35,7 @@ import (
 	common "git.semlanik.org/semlanik/gostfix/common"
 	"git.semlanik.org/semlanik/gostfix/config"
 	db "git.semlanik.org/semlanik/gostfix/db"
+	service "git.semlanik.org/semlanik/gostfix/service"
 
 	sessions "github.com/gorilla/sessions"
 )
@@ -66,9 +67,11 @@ type Server struct {
 	storage           *db.Storage
 	notifier          *webNotifier
 	scanner           common.Scanner
+	watcher           service.NanoServiceWatcher
+	httpServer        *http.Server
 }
 
-func NewServer(scanner common.Scanner) *Server {
+func NewServer(scanner common.Scanner, watcher service.NanoServiceWatcher) *Server {
 
 	storage, err := db.NewStorage()
 
@@ -91,17 +94,17 @@ func NewServer(scanner common.Scanner) *Server {
 		storage:           storage,
 		notifier:          NewWebNotifier(),
 		scanner:           scanner,
+		watcher:           watcher,
 	}
 
 	s.notifier.server = s
 	s.storage.RegisterNotifier(s.notifier)
+	s.httpServer = &http.Server{
+		Addr:    ":" + config.ConfigInstance().WebPort,
+		Handler: s,
+	}
 
 	return s
-}
-
-func (s *Server) Run() {
-	http.Handle("/", s)
-	log.Fatal(http.ListenAndServe(":"+config.ConfigInstance().WebPort, nil))
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -159,6 +162,8 @@ func (s *Server) handleSecure(w http.ResponseWriter, r *http.Request, urlParts [
 	case "settings":
 		s.handleSettings(w, r, user)
 	case "admin":
+		s.handleSecureZone(w, r, user)
+	case "s":
 		s.handleSecureZone(w, r, user)
 	default:
 		http.Redirect(w, r, "/m/0", http.StatusTemporaryRedirect)

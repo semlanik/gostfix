@@ -45,6 +45,7 @@ const (
 	SignupTemplateName     = "signup.html"
 	RegisterTemplateName   = "register.html"
 	SettingsTemplateName   = "settings.html"
+	AdminTemplateName      = "admin.html"
 )
 
 type Templater struct {

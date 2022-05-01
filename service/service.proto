@@ -1,0 +1,16 @@
+syntax = "proto3";
+option go_package = "./service";
+package service;
+
+enum NanoServiceStatus {
+	NanoServiceStopped = 0;
+	NanoServiceRunning = 1;
+	NanoServiceError = 2;
+}
+
+message NanoServiceStats {
+	string name = 1;
+	NanoServiceStatus status = 2;
+	string error = 3;
+	uint64 upTime = 4;
+}
